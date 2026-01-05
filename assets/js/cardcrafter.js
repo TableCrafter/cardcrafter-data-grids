@@ -63,12 +63,40 @@
                 }
                 return response.json();
             })
-            .then(function (data) {
-                self.renderCards(data);
+            .then(function (response) {
+                // Handle WP AJAX response format
+                if (response.success !== undefined) {
+                    if (response.success) {
+                        self.renderCards(response.data);
+                    } else {
+                        throw new Error(response.data || 'Unknown error fetching data');
+                    }
+                } else {
+                    // Standard direct JSON fetch
+                    self.renderCards(response);
+                }
             })
             .catch(function (error) {
                 console.error('CardCrafter fetch error:', error);
-                self.container.innerHTML = '<div class="cc-error"><p>Error loading data: ' + error.message + '</p></div>';
+
+                var errorMsg = error.message || 'Check your internet connection or data source URL.';
+
+                self.container.innerHTML =
+                    '<div class="cc-error-state" style="padding: 40px; text-align: center; border: 1px solid #fee2e2; background: #fef2f2; border-radius: 8px;">' +
+                    '<div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>' +
+                    '<h3 style="margin: 0 0 10px 0; color: #991b1b;">Unable to load cards</h3>' +
+                    '<p style="margin: 0 0 20px 0; color: #b91c1c; font-size: 14px;">' + errorMsg + '</p>' +
+                    '<button class="cc-retry-button" style="background: #991b1b; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600;">' +
+                    'Retry Loading' +
+                    '</button>' +
+                    '</div>';
+
+                var retryBtn = self.container.querySelector('.cc-retry-button');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', function () {
+                        self.init();
+                    });
+                }
             });
     };
 

@@ -1,9 +1,9 @@
 === CardCrafter – JSON to Card Layouts ===
-Contributors: fahdi
+Contributors: fahdm
 Tags: cards, json, api, grid, team, portfolio
 Requires at least: 5.0
-Tested up to: 6.9
-Stable tag: 1.0.0
+Tested up to: 6.7
+Stable tag: 1.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -84,8 +84,15 @@ CardCrafter works with any publicly accessible JSON endpoint. The API must allow
 
 == Changelog ==
 
+= 1.1.0 =
+* Feature: Added "Secure Data Proxy" - fetch data from any API regardless of CORS settings.
+* Performance: Implemented SWR (Stale-While-Revalidate) caching via transients for blazing-fast load times.
+* Resilience: Added intelligent "Error Diagnostics" and a "Retry" mechanism for failed data fetches.
+* Security: Enforced strict output escaping and SSRF protection to meet WordPress.org directory standards.
+* Maintenance: Updated Core Library to v1.1.0.
+
 = 1.0.0 =
-*   Initial release.
-*   Grid, Masonry, and List layouts.
-*   Live admin preview.
-*   Customizable field mapping.
+* Initial release.
+* Grid, Masonry, and List layouts.
+* Live admin preview.
+* Customizable field mapping.
