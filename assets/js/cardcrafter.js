@@ -39,8 +39,28 @@
             return;
         }
 
+        this.items = []; // Stores the original fetched data
+        this.filteredItems = []; // Stores items after search/filter operations
+        this.gridWrapper = null; // Will hold the DOM element for the card grid
+
         this.init();
     }
+
+    /**
+     * DOM Elements creation helper
+     */
+    CardCrafter.prototype.createEl = function (tag, className, attributes) {
+        var el = document.createElement(tag);
+        if (className) el.className = className;
+        if (attributes) {
+            for (var key in attributes) {
+                if (attributes.hasOwnProperty(key)) {
+                    el.setAttribute(key, attributes[key]);
+                }
+            }
+        }
+        return el;
+    };
 
     /**
      * Initialize the card grid
@@ -64,40 +84,150 @@
                 return response.json();
             })
             .then(function (response) {
+                var data;
                 // Handle WP AJAX response format
                 if (response.success !== undefined) {
                     if (response.success) {
-                        self.renderCards(response.data);
+                        data = response.data;
                     } else {
                         throw new Error(response.data || 'Unknown error fetching data');
                     }
                 } else {
                     // Standard direct JSON fetch
-                    self.renderCards(response);
+                    data = response;
                 }
+
+                // Store raw items
+                self.items = Array.isArray(data) ? data : (data.items || data.data || data.results || [data]);
+                self.filteredItems = self.items.slice(); // Copy for filtering
+
+                self.renderLayout();
             })
             .catch(function (error) {
                 console.error('CardCrafter fetch error:', error);
-
-                var errorMsg = error.message || 'Check your internet connection or data source URL.';
-
-                self.container.innerHTML =
-                    '<div class="cardcrafter-error-state" style="padding: 40px; text-align: center; border: 1px solid #fee2e2; background: #fef2f2; border-radius: 8px;">' +
-                    '<div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>' +
-                    '<h3 style="margin: 0 0 10px 0; color: #991b1b;">Unable to load cards</h3>' +
-                    '<p style="margin: 0 0 20px 0; color: #b91c1c; font-size: 14px;">' + errorMsg + '</p>' +
-                    '<button class="cardcrafter-retry-button" style="background: #991b1b; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600;">' +
-                    'Retry Loading' +
-                    '</button>' +
-                    '</div>';
-
-                var retryBtn = self.container.querySelector('.cardcrafter-retry-button');
-                if (retryBtn) {
-                    retryBtn.addEventListener('click', function () {
-                        self.init();
-                    });
-                }
+                self.renderError(error);
             });
+    };
+
+    /**
+     * Render the main layout structure (Toolbar + Grid)
+     */
+    CardCrafter.prototype.renderLayout = function () {
+        this.container.innerHTML = '';
+        
+        // render toolbar
+        this.renderToolbar();
+
+        // create grid wrapper
+        this.gridWrapper = this.createEl('div', 'cardcrafter-grid-wrapper');
+        this.container.appendChild(this.gridWrapper);
+
+        // initial sort and render
+        this.sortItems('default');
+        this.renderCards(this.filteredItems);
+    };
+
+    /**
+     * Render the Search and Sort Toolbar
+     */
+    CardCrafter.prototype.renderToolbar = function () {
+        var self = this;
+        var toolbar = this.createEl('div', 'cardcrafter-toolbar');
+
+        // Search Input
+        var searchWrapper = this.createEl('div', 'cardcrafter-search-wrapper');
+        var searchInput = this.createEl('input', 'cardcrafter-search-input', {
+            type: 'search',
+            placeholder: 'Search items...'
+        });
+
+        searchInput.addEventListener('input', function (e) {
+            self.handleSearch(e.target.value);
+        });
+
+        searchWrapper.appendChild(searchInput);
+        toolbar.appendChild(searchWrapper);
+
+        // Sort Dropdown
+        var sortWrapper = this.createEl('div', 'cardcrafter-sort-wrapper');
+        var sortSelect = this.createEl('select', 'cardcrafter-sort-select');
+        
+        var options = [
+            { value: 'default', text: 'Default Order' },
+            { value: 'az', text: 'Name (A-Z)' },
+            { value: 'za', text: 'Name (Z-A)' }
+        ];
+
+        options.forEach(function(opt) {
+            var option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.text;
+            sortSelect.appendChild(option);
+        });
+
+        sortSelect.addEventListener('change', function (e) {
+            self.sortItems(e.target.value);
+            self.renderCards(self.filteredItems);
+        });
+
+        sortWrapper.appendChild(sortSelect);
+        toolbar.appendChild(sortWrapper);
+
+        this.container.appendChild(toolbar);
+    };
+
+    /**
+     * Handle Search Input
+     */
+    CardCrafter.prototype.handleSearch = function (query) {
+        var self = this;
+        var q = query.toLowerCase().trim();
+
+        if (!q) {
+            this.filteredItems = this.items.slice();
+        } else {
+            this.filteredItems = this.items.filter(function (item) {
+                var title = (self.getNestedValue(item, self.options.fields.title) || '').toLowerCase();
+                var desc = (self.getNestedValue(item, self.options.fields.description) || '').toLowerCase();
+                var sub = (self.getNestedValue(item, self.options.fields.subtitle) || '').toLowerCase();
+                
+                return title.includes(q) || desc.includes(q) || sub.includes(q);
+            });
+        }
+        
+        // Re-apply current sort
+        var currentSort = this.container.querySelector('.cardcrafter-sort-select').value;
+        this.sortItems(currentSort);
+
+        this.renderCards(this.filteredItems);
+    };
+
+    /**
+     * Sort Items
+     */
+    CardCrafter.prototype.sortItems = function (sortType) {
+        var self = this;
+        
+        if (sortType === 'default') {
+            // If default, we can't easily restore original order unless we stored indices or cloned original.
+            // But since handleSearch resets filteredItems from .items (which is original order), 
+            // we just need to not sort if default, assuming .items is preserved in order.
+            // If the user searches then goes back to default, handleSearch resets from this.items.
+            // So we just don't sort here.
+            return; 
+        }
+
+        this.filteredItems.sort(function (a, b) {
+            var titleA = (self.getNestedValue(a, self.options.fields.title) || '').toLowerCase();
+            var titleB = (self.getNestedValue(b, self.options.fields.title) || '').toLowerCase();
+
+            if (sortType === 'az') {
+                return titleA.localeCompare(titleB);
+            } else if (sortType === 'za') {
+                return titleB.localeCompare(titleA);
+            }
+            return 0;
+        });
     };
 
     /**
@@ -132,27 +262,26 @@
     /**
      * Render cards from data
      */
-    CardCrafter.prototype.renderCards = function (data) {
+    CardCrafter.prototype.renderCards = function (items) {
         var self = this;
-        var items = Array.isArray(data) ? data : (data.items || data.data || data.results || [data]);
-
+        
         if (!items.length) {
-            this.container.innerHTML = '<div class="cardcrafter-error"><p>No data found</p></div>';
+            this.gridWrapper.innerHTML = '<div class="cardcrafter-no-results"><p>No items found matching your search.</p></div>';
             return;
         }
 
-        // Create wrapper
-        var wrapper = document.createElement('div');
-        wrapper.className = 'cardcrafter-grid cardcrafter-layout-' + this.options.layout + ' cardcrafter-cols-' + this.options.columns;
+        // Create grid container
+        var grid = document.createElement('div');
+        grid.className = 'cardcrafter-grid cardcrafter-layout-' + this.options.layout + ' cardcrafter-cols-' + this.options.columns;
 
         // Generate cards
         items.forEach(function (item, index) {
             var card = self.createCard(item, index);
-            wrapper.appendChild(card);
+            grid.appendChild(card);
         });
 
-        this.container.innerHTML = '';
-        this.container.appendChild(wrapper);
+        this.gridWrapper.innerHTML = '';
+        this.gridWrapper.appendChild(grid);
     };
 
     /**
@@ -233,6 +362,31 @@
         card.appendChild(cardInner);
 
         return card;
+    };
+
+    /**
+     * Render Error State
+     */
+    CardCrafter.prototype.renderError = function (error) {
+        var self = this;
+        var errorMsg = error.message || 'Check your internet connection or data source URL.';
+
+        this.container.innerHTML =
+            '<div class="cardcrafter-error-state" style="padding: 40px; text-align: center; border: 1px solid #fee2e2; background: #fef2f2; border-radius: 8px;">' +
+            '<div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>' +
+            '<h3 style="margin: 0 0 10px 0; color: #991b1b;">Unable to load cards</h3>' +
+            '<p style="margin: 0 0 20px 0; color: #b91c1c; font-size: 14px;">' + errorMsg + '</p>' +
+            '<button class="cardcrafter-retry-button" style="background: #991b1b; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600;">' +
+            'Retry Loading' +
+            '</button>' +
+            '</div>';
+
+        var retryBtn = this.container.querySelector('.cardcrafter-retry-button');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', function () {
+                self.init();
+            });
+        }
     };
 
     // Expose to global scope

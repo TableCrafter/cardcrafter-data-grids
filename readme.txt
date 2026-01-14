@@ -4,7 +4,7 @@ Tags: json, cards, grid, portfolio, team
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1.4
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,10 +24,12 @@ Whether you're building a team directory, product showcase, or portfolio gallery
 *   **🎨 Beautiful by Default:** Modern, clean card designs that look professional out of the box.
 *   **📱 Fully Responsive:** Cards automatically adapt to any screen size.
 *   **⚡ Lightweight:** Pure JavaScript, no jQuery. Fast and efficient.
+*   **🔍 Interactive:** Built-in search and sorting for easy data navigation.
 *   **🔧 Flexible Layouts:** Choose between Grid, Masonry, or List view.
 
 ### 🚀 Key Features
 
+*   **Instant Search & Sort:** Users can filter and sort cards instantly (Client-side).
 *   **Multiple Layouts:** Grid, Masonry, and List views to suit your content.
 *   **Customizable Columns:** Display 2, 3, or 4 cards per row.
 *   **Smart Field Mapping:** Automatically detects image, title, subtitle, description, and link fields.
@@ -88,6 +90,11 @@ CardCrafter works with any publicly accessible JSON endpoint. The API must allow
 5. **Portfolio Gallery** - Elegant display for creative work.
 
 == Changelog ==
+
+= 1.2.0 =
+* Feature: Added interactive Search Toolbar (Client-side filtering).
+* Feature: Added Sorting functionality (A-Z, Z-A).
+* Design: Added modern styles for search inputs and dropdowns.
 
 = 1.1.4 =
 * Security: Implemented rate limiting (30 requests/minute) on the AJAX proxy to prevent abuse.
