@@ -3,9 +3,9 @@
  * Plugin Name: CardCrafter – Data-Driven Card Grids
  * Plugin URI: https://github.com/TableCrafter/cardcrafter-data-grids
  * Description: Transform JSON data into beautiful, responsive card grids. Perfect for team directories, product showcases, and portfolio displays.
- * Version: 1.1.3
+ * Version: 1.1.4
  * Author: fahdi
- * Author URI: https://github.com/fahdi
+ * Author URI: https://github.com/TableCrafter
  * License: GPLv2 or later
  * Text Domain: cardcrafter-data-grids
  * Domain Path: /languages
@@ -20,7 +20,7 @@ Note: Plugin name and slug updated to CardCrafter – Data-Driven Card Grids / c
 All functional code remains unchanged. These changes are recommended by an AI and do not replace WordPress.org volunteer review guidance.
 */
 
-define('CARDCRAFTER_VERSION', '1.1.3');
+define('CARDCRAFTER_VERSION', '1.1.4');
 define('CARDCRAFTER_URL', plugin_dir_url(__FILE__));
 define('CARDCRAFTER_PATH', plugin_dir_path(__FILE__));
 
@@ -314,6 +314,9 @@ class CardCrafter
     /**
      * Secure AJAX Data Proxy & Cache Handler.
      */
+    /**
+     * Secure AJAX Data Proxy & Cache Handler.
+     */
     public function ajax_proxy_fetch()
     {
         // 1. Verify Nonce First (Compliance: NonceVerification)
@@ -322,11 +325,18 @@ class CardCrafter
             wp_send_json_error('Security check failed.');
         }
 
+        // 1.5 Rate Limiting Check (Security)
+        if ($this->is_rate_limited()) {
+            status_header(429);
+            wp_send_json_error('Rate limit exceeded. Please wait.', 429);
+        }
+
         // 2. Fetch and Unslash URL (Compliance: MissingUnslash)
         $url = isset($_REQUEST['url']) ? esc_url_raw(wp_unslash($_REQUEST['url'])) : '';
 
-        if (empty($url) || !$this->is_safe_url($url)) {
-            wp_send_json_error('Invalid or unsafe URL.');
+        // Verification: Use wp_safe_remote_get which handles private IP blocking
+        if (empty($url)) {
+            wp_send_json_error('Invalid URL.');
         }
 
         $cache_key = 'cardcrafter_cache_' . md5($url);
@@ -336,8 +346,11 @@ class CardCrafter
             wp_send_json_success($cached_data);
         }
 
-        $response = wp_remote_get($url, array('timeout' => 15));
+        // SENSITIVE SINK: Using wp_safe_remote_get to prevent SSRF
+        $response = wp_safe_remote_get($url, array('timeout' => 15));
+
         if (is_wp_error($response)) {
+            // This handles both connection errors AND blocked local IPs
             wp_send_json_error($response->get_error_message());
         }
 
@@ -375,7 +388,8 @@ class CardCrafter
     {
         $urls = get_option('cardcrafter_tracked_urls', array());
         foreach ($urls as $url) {
-            $response = wp_remote_get($url, array('timeout' => 10));
+            // Using safe method here as well
+            $response = wp_safe_remote_get($url, array('timeout' => 10));
             if (!is_wp_error($response)) {
                 $body = wp_remote_retrieve_body($response);
                 $data = json_decode($body, true);
@@ -387,27 +401,68 @@ class CardCrafter
     }
 
     /**
-     * SSRF Prevention Helper.
+     * Rate Limiting Constants.
      */
-    private function is_safe_url(string $url): bool
-    {
-        // Use wp_parse_url for consistency (Compliance: parse_url discourage)
-        $url_parts = wp_parse_url($url);
-        $host = isset($url_parts['host']) ? $url_parts['host'] : '';
+    private const RATE_LIMIT_MAX_REQUESTS = 30;
+    private const RATE_LIMIT_WINDOW_SECONDS = 60;
 
-        if (!$host)
-            return false;
-        if (in_array(strtolower($host), array('localhost', '127.0.0.1', '[::1]')))
-            return false;
-        if (filter_var($host, FILTER_VALIDATE_IP)) {
-            $is_private = !filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
-            if ($is_private)
-                return false;
+    /**
+     * Rate Limiting Helper.
+     * 
+     * Checks and increments the request count for the current user/IP.
+     * 
+     * @return bool True if rate limit exceeded, false if allowed.
+     */
+    private function is_rate_limited(): bool
+    {
+        // Build unique identifier
+        $identifier = get_current_user_id();
+        if ($identifier === 0) {
+            $identifier = $this->get_client_ip();
         }
-        return true;
+
+        $transient_key = 'cc_rate_' . md5((string) $identifier);
+        $current_count = get_transient($transient_key);
+
+        if ($current_count === false) {
+            set_transient($transient_key, 1, self::RATE_LIMIT_WINDOW_SECONDS);
+            return false;
+        }
+
+        if ((int) $current_count >= self::RATE_LIMIT_MAX_REQUESTS) {
+            return true;
+        }
+
+        set_transient($transient_key, (int) $current_count + 1, self::RATE_LIMIT_WINDOW_SECONDS);
+        return false;
     }
 
+    /**
+     * Get Client IP Address.
+     * 
+     * @return string The client IP address.
+     */
+    private function get_client_ip(): string
+    {
+        $ip = '';
+        $headers = array('HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR');
+
+        foreach ($headers as $header) {
+            if (!empty($_SERVER[$header])) {
+                $ip = explode(',', sanitize_text_field(wp_unslash($_SERVER[$header])))[0];
+                $ip = trim($ip);
+                if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                    break;
+                }
+                $ip = '';
+            }
+        }
+
+        return $ip ?: 'unknown_' . md5(wp_json_encode($_SERVER));
+    }
 }
 
 // Initialize
-CardCrafter::get_instance();
+if (!defined('WP_INT_TEST')) {
+    CardCrafter::get_instance();
+}
