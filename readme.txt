@@ -1,10 +1,10 @@
 === CardCrafter – Data-Driven Card Grids ===
 Contributors: fahdi
-Tags: json, cards, grid, portfolio, team
+Tags: json, cards, grid, portfolio, team, gutenberg, block
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,6 +29,7 @@ Whether you're building a team directory, product showcase, or portfolio gallery
 
 ### 🚀 Key Features
 
+*   **🧱 Gutenberg Block:** Native WordPress block editor support with visual configuration.
 *   **Instant Search & Sort:** Users can filter and sort cards instantly (Client-side).
 *   **Multiple Layouts:** Grid, Masonry, and List views to suit your content.
 *   **Customizable Columns:** Display 2, 3, or 4 cards per row.
@@ -46,15 +47,30 @@ Whether you're building a team directory, product showcase, or portfolio gallery
 
 == Installation ==
 
-1.  Upload the `cardcrafter` folder to the `/wp-content/plugins/` directory.
-2.  Activate the plugin through the 'Plugins' menu in WordPress.
-3.  Navigate to the **CardCrafter** admin menu.
-4.  Paste your JSON URL or try the demo data.
-5.  Copy the shortcode and add it to any page.
+**Option 1: WordPress Admin (Recommended)**
+1. Go to **Plugins** → **Add New** in your WordPress admin
+2. Search for "CardCrafter Data Grids"
+3. Click **Install Now** and then **Activate**
+
+**Option 2: Manual Installation**
+1. Download the plugin from [WordPress.org](https://wordpress.org/plugins/cardcrafter-data-grids/)
+2. Upload the `cardcrafter-data-grids` folder to `/wp-content/plugins/`
+3. Activate through **Plugins** → **Installed Plugins**
+
+**Quick Start:**
+- **Block Editor:** Add the "CardCrafter" block to any post/page
+- **Classic Editor:** Use shortcode `[cardcrafter-data-grids source="your-json-url"]`
+- **Admin Demo:** Go to **CardCrafter** menu to test with demo data
 
 == Usage ==
 
-**Basic Shortcode:**
+**Gutenberg Block (Recommended):**
+1. Add the "CardCrafter" block to any post/page
+2. Configure your data source in the sidebar settings
+3. Choose layout, columns, and interactive features
+4. Preview updates live in the editor
+
+**Shortcode (Classic Editor):**
 `[cardcrafter-data-grids source="https://example.com/team.json"]`
 
 **With Options:**
@@ -83,13 +99,21 @@ CardCrafter works with any publicly accessible JSON endpoint. The API must allow
 
 == Screenshots ==
 
-1. **Admin Dashboard & Grid Preview (Team Directory)** - Configure your card layout and preview instantly in the WordPress admin.
-2. **Masonry Layout (Team Directory)** - Pinterest-style masonry layout for varied content heights.
-3. **List Layout (Team Directory)** - Clean horizontal list view for detailed content.
-4. **Product Showcase** - Grid layout perfect for displaying products with prices.
-5. **Portfolio Gallery** - Elegant display for creative work.
+1. **Gutenberg Block Editor** - Native WordPress block with sidebar configuration and live preview.
+2. **Admin Dashboard & Grid Preview (Team Directory)** - Configure your card layout and preview instantly in the WordPress admin.
+3. **Masonry Layout (Team Directory)** - Pinterest-style masonry layout for varied content heights.
+4. **List Layout (Team Directory)** - Clean horizontal list view for detailed content.
+5. **Product Showcase** - Grid layout perfect for displaying products with prices.
+6. **Portfolio Gallery** - Elegant display for creative work.
 
 == Changelog ==
+
+= 1.3.0 =
+* Feature: Added native Gutenberg Block support with visual configuration.
+* Feature: Block editor sidebar with data source selection and demo URLs.
+* Feature: Live preview in block editor matching frontend output.
+* Design: Professional 4-card grid icon matching WordPress design standards.
+* UX: Streamlined workflow for modern WordPress editing experience.
 
 = 1.2.0 =
 * Feature: Added interactive Search Toolbar (Client-side filtering).

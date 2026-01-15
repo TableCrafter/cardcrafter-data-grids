@@ -3,7 +3,7 @@
  * Plugin Name: CardCrafter – Data-Driven Card Grids
  * Plugin URI: https://github.com/TableCrafter/cardcrafter-data-grids
  * Description: Transform JSON data into beautiful, responsive card grids. Perfect for team directories, product showcases, and portfolio displays.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author: fahdi
  * Author URI: https://github.com/TableCrafter
  * License: GPLv2 or later
@@ -20,7 +20,7 @@ Note: Plugin name and slug updated to CardCrafter – Data-Driven Card Grids / c
 All functional code remains unchanged. These changes are recommended by an AI and do not replace WordPress.org volunteer review guidance.
 */
 
-define('CARDCRAFTER_VERSION', '1.2.0');
+define('CARDCRAFTER_VERSION', '1.3.0');
 define('CARDCRAFTER_URL', plugin_dir_url(__FILE__));
 define('CARDCRAFTER_PATH', plugin_dir_path(__FILE__));
 
@@ -51,6 +51,9 @@ class CardCrafter
         add_action('admin_enqueue_scripts', array($this, 'register_assets'));
         add_shortcode('cardcrafter-data-grids', array($this, 'render_cards'));
         add_action('admin_menu', array($this, 'add_admin_menu'));
+        
+        // Gutenberg Block Support
+        add_action('init', array($this, 'register_block'));
 
         // Secure Proxy Handlers
         add_action('wp_ajax_cardcrafter_proxy_fetch', array($this, 'ajax_proxy_fetch'));
@@ -195,6 +198,68 @@ class CardCrafter
         <?php
     }
 
+
+    /**
+     * Register Gutenberg block for the block editor.
+     */
+    public function register_block()
+    {
+        wp_register_script(
+            'cardcrafter-block',
+            CARDCRAFTER_URL . 'assets/js/block.js',
+            array('wp-blocks', 'wp-block-editor', 'wp-components', 'wp-element'),
+            CARDCRAFTER_VERSION,
+            true
+        );
+
+        wp_register_style(
+            'cardcrafter-block-editor',
+            CARDCRAFTER_URL . 'assets/css/cardcrafter.css',
+            array(),
+            CARDCRAFTER_VERSION
+        );
+
+        // Demo URLs for the block editor
+        $demo_urls = array(
+            array('label' => 'Select a demo...', 'value' => ''),
+            array('label' => '👥 Team Directory', 'value' => CARDCRAFTER_URL . 'assets/demo/team.json'),
+            array('label' => '📦 Product Showcase', 'value' => CARDCRAFTER_URL . 'assets/demo/products.json'),
+            array('label' => '🎨 Portfolio Gallery', 'value' => CARDCRAFTER_URL . 'assets/demo/portfolio.json')
+        );
+
+        wp_localize_script('cardcrafter-block', 'cardcrafterData', array(
+            'demoUrls' => $demo_urls
+        ));
+
+        register_block_type('cardcrafter/data-grid', array(
+            'editor_script' => 'cardcrafter-block',
+            'editor_style' => 'cardcrafter-block-editor',
+            'render_callback' => array($this, 'render_block_callback'),
+            'attributes' => array(
+                'source' => array('type' => 'string', 'default' => ''),
+                'layout' => array('type' => 'string', 'default' => 'grid'),
+                'search' => array('type' => 'boolean', 'default' => true),
+                'sort' => array('type' => 'boolean', 'default' => true),
+                'cards_per_row' => array('type' => 'number', 'default' => 3)
+            )
+        ));
+    }
+
+    /**
+     * Render callback for the Gutenberg block.
+     */
+    public function render_block_callback($attributes)
+    {
+        $shortcode_attrs = array(
+            'source' => $attributes['source'],
+            'layout' => $attributes['layout'],
+            'search' => $attributes['search'] ? 'true' : 'false',
+            'sort' => $attributes['sort'] ? 'true' : 'false',
+            'columns' => $attributes['cards_per_row']
+        );
+
+        return $this->render_shortcode($shortcode_attrs);
+    }
 
     /**
      * Register frontend assets.
