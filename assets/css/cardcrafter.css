@@ -211,6 +211,11 @@
     justify-content: center;
 }
 
+.cardcrafter-layout-list .cardcrafter-card-link {
+    align-self: flex-start;
+    width: auto;
+}
+
 @media (max-width: 600px) {
     .cardcrafter-layout-list .cardcrafter-card-inner {
         flex-direction: column;
