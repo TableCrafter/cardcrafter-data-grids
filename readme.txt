@@ -12,6 +12,8 @@ Transform JSON data into beautiful, responsive card grids. Perfect for team dire
 
 == Description ==
 
+🚀 **[Try Live Demo](https://tastewp.com/plugins/cardcrafter-data-grids)** - Test CardCrafter instantly without installation!
+
 Note: Plugin name and slug updated to CardCrafter – Data-Driven Card Grids / cardcrafter-data-grids. 
 All functional code remains unchanged. These changes are recommended by an AI and do not replace WordPress.org volunteer review guidance.
 
