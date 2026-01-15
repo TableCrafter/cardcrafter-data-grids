@@ -42,6 +42,8 @@
         this.items = []; // Stores the original fetched data
         this.filteredItems = []; // Stores items after search/filter operations
         this.gridWrapper = null; // Will hold the DOM element for the card grid
+        this.searchTimeout = null; // Debounce timeout for search
+        this.searchCache = {}; // Cache search results for better performance
 
         this.init();
     }
@@ -142,7 +144,7 @@
         });
 
         searchInput.addEventListener('input', function (e) {
-            self.handleSearch(e.target.value);
+            self.debouncedSearch(e.target.value);
         });
 
         searchWrapper.appendChild(searchInput);
@@ -177,22 +179,55 @@
     };
 
     /**
+     * Debounced Search with Performance Optimization
+     */
+    CardCrafter.prototype.debouncedSearch = function (query) {
+        var self = this;
+        
+        // Clear previous timeout
+        if (this.searchTimeout) {
+            clearTimeout(this.searchTimeout);
+        }
+        
+        // Set new timeout for debouncing
+        this.searchTimeout = setTimeout(function() {
+            self.handleSearch(query);
+        }, 300); // 300ms debounce delay
+    };
+
+    /**
      * Handle Search Input
      */
     CardCrafter.prototype.handleSearch = function (query) {
         var self = this;
         var q = query.toLowerCase().trim();
 
-        if (!q) {
-            this.filteredItems = this.items.slice();
+        // Check cache first for performance
+        if (this.searchCache[q]) {
+            this.filteredItems = this.searchCache[q].slice();
         } else {
-            this.filteredItems = this.items.filter(function (item) {
-                var title = (self.getNestedValue(item, self.options.fields.title) || '').toLowerCase();
-                var desc = (self.getNestedValue(item, self.options.fields.description) || '').toLowerCase();
-                var sub = (self.getNestedValue(item, self.options.fields.subtitle) || '').toLowerCase();
-                
-                return title.includes(q) || desc.includes(q) || sub.includes(q);
-            });
+            if (!q) {
+                this.filteredItems = this.items.slice();
+            } else {
+                // Performance optimization: pre-compute searchable text for each item
+                this.filteredItems = this.items.filter(function (item) {
+                    // Cache searchable text for this item if not already cached
+                    if (!item._searchableText) {
+                        var title = (self.getNestedValue(item, self.options.fields.title) || '').toLowerCase();
+                        var desc = (self.getNestedValue(item, self.options.fields.description) || '').toLowerCase();
+                        var sub = (self.getNestedValue(item, self.options.fields.subtitle) || '').toLowerCase();
+                        item._searchableText = title + ' ' + desc + ' ' + sub;
+                    }
+                    
+                    return item._searchableText.includes(q);
+                });
+            }
+            
+            // Cache the results (limit cache size to prevent memory bloat)
+            if (Object.keys(this.searchCache).length > 50) {
+                this.searchCache = {}; // Reset cache when it gets too large
+            }
+            this.searchCache[q] = this.filteredItems.slice();
         }
         
         // Re-apply current sort
@@ -274,12 +309,16 @@
         var grid = document.createElement('div');
         grid.className = 'cardcrafter-grid cardcrafter-layout-' + this.options.layout + ' cardcrafter-cols-' + this.options.columns;
 
+        // Performance optimization: Use DocumentFragment for batch DOM operations
+        var fragment = document.createDocumentFragment();
+        
         // Generate cards
         items.forEach(function (item, index) {
             var card = self.createCard(item, index);
-            grid.appendChild(card);
+            fragment.appendChild(card);
         });
-
+        
+        grid.appendChild(fragment);
         this.gridWrapper.innerHTML = '';
         this.gridWrapper.appendChild(grid);
     };
