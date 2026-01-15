@@ -44,6 +44,11 @@
         this.gridWrapper = null; // Will hold the DOM element for the card grid
         this.searchTimeout = null; // Debounce timeout for search
         this.searchCache = {}; // Cache search results for better performance
+        
+        // Pagination properties
+        this.currentPage = 1;
+        this.itemsPerPage = this.options.itemsPerPage || 12; // Default 12 items per page
+        this.paginationWrapper = null; // Will hold pagination controls
 
         this.init();
     }
@@ -112,7 +117,7 @@
     };
 
     /**
-     * Render the main layout structure (Toolbar + Grid)
+     * Render the main layout structure (Toolbar + Grid + Pagination)
      */
     CardCrafter.prototype.renderLayout = function () {
         this.container.innerHTML = '';
@@ -124,9 +129,13 @@
         this.gridWrapper = this.createEl('div', 'cardcrafter-grid-wrapper');
         this.container.appendChild(this.gridWrapper);
 
+        // create pagination wrapper
+        this.paginationWrapper = this.createEl('div', 'cardcrafter-pagination-wrapper');
+        this.container.appendChild(this.paginationWrapper);
+
         // initial sort and render
         this.sortItems('default');
-        this.renderCards(this.filteredItems);
+        this.renderPaginatedCards();
     };
 
     /**
@@ -169,11 +178,45 @@
 
         sortSelect.addEventListener('change', function (e) {
             self.sortItems(e.target.value);
-            self.renderCards(self.filteredItems);
+            self.renderPaginatedCards();
         });
 
         sortWrapper.appendChild(sortSelect);
         toolbar.appendChild(sortWrapper);
+
+        // Items Per Page Dropdown
+        var perPageWrapper = this.createEl('div', 'cardcrafter-per-page-wrapper');
+        var perPageLabel = this.createEl('label', 'cardcrafter-per-page-label');
+        perPageLabel.textContent = 'Items: ';
+        var perPageSelect = this.createEl('select', 'cardcrafter-per-page-select');
+        
+        var perPageOptions = [
+            { value: '6', text: '6 per page' },
+            { value: '12', text: '12 per page' },
+            { value: '24', text: '24 per page' },
+            { value: '50', text: '50 per page' },
+            { value: '100', text: '100 per page' }
+        ];
+
+        perPageOptions.forEach(function(opt) {
+            var option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.text;
+            if (opt.value == self.itemsPerPage) {
+                option.selected = true;
+            }
+            perPageSelect.appendChild(option);
+        });
+
+        perPageSelect.addEventListener('change', function (e) {
+            self.itemsPerPage = parseInt(e.target.value);
+            self.currentPage = 1; // Reset to first page
+            self.renderPaginatedCards();
+        });
+
+        perPageWrapper.appendChild(perPageLabel);
+        perPageWrapper.appendChild(perPageSelect);
+        toolbar.appendChild(perPageWrapper);
 
         this.container.appendChild(toolbar);
     };
@@ -234,7 +277,9 @@
         var currentSort = this.container.querySelector('.cardcrafter-sort-select').value;
         this.sortItems(currentSort);
 
-        this.renderCards(this.filteredItems);
+        // Reset to first page when search changes
+        this.currentPage = 1;
+        this.renderPaginatedCards();
     };
 
     /**
@@ -321,6 +366,108 @@
         grid.appendChild(fragment);
         this.gridWrapper.innerHTML = '';
         this.gridWrapper.appendChild(grid);
+    };
+
+    /**
+     * Render paginated cards with pagination controls
+     */
+    CardCrafter.prototype.renderPaginatedCards = function () {
+        var totalItems = this.filteredItems.length;
+        var totalPages = Math.ceil(totalItems / this.itemsPerPage);
+        
+        // Calculate current page items
+        var startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        var endIndex = startIndex + this.itemsPerPage;
+        var currentPageItems = this.filteredItems.slice(startIndex, endIndex);
+        
+        // Render the current page of cards
+        this.renderCards(currentPageItems);
+        
+        // Render pagination controls
+        this.renderPaginationControls(totalPages, totalItems);
+    };
+
+    /**
+     * Render pagination controls
+     */
+    CardCrafter.prototype.renderPaginationControls = function (totalPages, totalItems) {
+        var self = this;
+        
+        if (!this.paginationWrapper) return;
+        
+        this.paginationWrapper.innerHTML = '';
+        
+        // Don't show pagination if only one page or no items
+        if (totalPages <= 1) return;
+        
+        var pagination = this.createEl('div', 'cardcrafter-pagination');
+        
+        // Results info
+        var startItem = ((this.currentPage - 1) * this.itemsPerPage) + 1;
+        var endItem = Math.min(this.currentPage * this.itemsPerPage, totalItems);
+        var resultsInfo = this.createEl('div', 'cardcrafter-pagination-info');
+        resultsInfo.textContent = 'Showing ' + startItem + '-' + endItem + ' of ' + totalItems + ' items';
+        pagination.appendChild(resultsInfo);
+        
+        // Pagination controls container
+        var controls = this.createEl('div', 'cardcrafter-pagination-controls');
+        
+        // Previous button
+        var prevBtn = this.createEl('button', 'cardcrafter-pagination-btn cardcrafter-pagination-prev');
+        prevBtn.textContent = 'Previous';
+        prevBtn.disabled = this.currentPage === 1;
+        prevBtn.addEventListener('click', function() {
+            if (self.currentPage > 1) {
+                self.currentPage--;
+                self.renderPaginatedCards();
+            }
+        });
+        controls.appendChild(prevBtn);
+        
+        // Page numbers (show max 5 page numbers)
+        var startPage = Math.max(1, this.currentPage - 2);
+        var endPage = Math.min(totalPages, startPage + 4);
+        
+        // Adjust start if we're near the end
+        if (endPage - startPage < 4) {
+            startPage = Math.max(1, endPage - 4);
+        }
+        
+        for (var i = startPage; i <= endPage; i++) {
+            var pageBtn = this.createEl('button', 'cardcrafter-pagination-btn cardcrafter-pagination-number');
+            pageBtn.textContent = i;
+            if (i === this.currentPage) {
+                pageBtn.classList.add('cardcrafter-pagination-current');
+            }
+            pageBtn.addEventListener('click', this.createPageClickHandler(i));
+            controls.appendChild(pageBtn);
+        }
+        
+        // Next button
+        var nextBtn = this.createEl('button', 'cardcrafter-pagination-btn cardcrafter-pagination-next');
+        nextBtn.textContent = 'Next';
+        nextBtn.disabled = this.currentPage === totalPages;
+        nextBtn.addEventListener('click', function() {
+            if (self.currentPage < totalPages) {
+                self.currentPage++;
+                self.renderPaginatedCards();
+            }
+        });
+        controls.appendChild(nextBtn);
+        
+        pagination.appendChild(controls);
+        this.paginationWrapper.appendChild(pagination);
+    };
+
+    /**
+     * Create page click handler (closure to capture page number)
+     */
+    CardCrafter.prototype.createPageClickHandler = function(pageNumber) {
+        var self = this;
+        return function() {
+            self.currentPage = pageNumber;
+            self.renderPaginatedCards();
+        };
     };
 
     /**

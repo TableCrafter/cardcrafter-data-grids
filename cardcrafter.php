@@ -325,6 +325,7 @@ class CardCrafter
             'id' => 'cardcrafter-' . uniqid(),
             'layout' => 'grid',
             'columns' => 3,
+            'items_per_page' => 12,
             'image_field' => 'image',
             'title_field' => 'title',
             'subtitle_field' => 'subtitle',
@@ -336,6 +337,7 @@ class CardCrafter
         $atts['source'] = esc_url_raw($atts['source']);
         $atts['layout'] = sanitize_key($atts['layout']);
         $atts['columns'] = absint($atts['columns']);
+        $atts['items_per_page'] = min(100, max(1, absint($atts['items_per_page']))); // Limit between 1-100
 
         if (empty($atts['source'])) {
             return '<p>' . esc_html__('Error: CardCrafter requires a "source" attribute.', 'cardcrafter-data-grids') . '</p>';
@@ -354,6 +356,7 @@ class CardCrafter
             'source' => admin_url('admin-ajax.php') . '?action=cardcrafter_proxy_fetch&url=' . urlencode($atts['source']) . '&nonce=' . wp_create_nonce('cardcrafter_proxy_nonce'),
             'layout' => $atts['layout'],
             'columns' => $atts['columns'],
+            'itemsPerPage' => $atts['items_per_page'],
             'fields' => array(
                 'image' => sanitize_key($atts['image_field']),
                 'title' => sanitize_key($atts['title_field']),

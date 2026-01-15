@@ -113,6 +113,35 @@
     border-color: var(--cardcrafter-link-color);
 }
 
+.cardcrafter-per-page-wrapper {
+    min-width: 120px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cardcrafter-per-page-label {
+    font-weight: 500;
+    color: var(--cardcrafter-text-color);
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.cardcrafter-per-page-select {
+    width: 100%;
+    padding: 10px 16px;
+    border: 1px solid var(--cardcrafter-card-border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+    cursor: pointer;
+    outline: none;
+}
+
+.cardcrafter-per-page-select:focus {
+    border-color: var(--cardcrafter-link-color);
+}
+
 .cardcrafter-no-results {
     width: 100%;
     padding: 40px;
@@ -377,6 +406,115 @@
 /* ==========================================================================
    Dark Mode Support
    ========================================================================== */
+/* ==========================================================================
+   Pagination Styles
+   ========================================================================== */
+.cardcrafter-pagination-wrapper {
+    margin-top: 32px;
+}
+
+.cardcrafter-pagination {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: #f9fafb;
+    border-radius: var(--cardcrafter-card-radius);
+    border: 1px solid var(--cardcrafter-card-border);
+}
+
+.cardcrafter-pagination-info {
+    color: var(--cardcrafter-subtitle-color);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.cardcrafter-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.cardcrafter-pagination-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--cardcrafter-card-border);
+    background: #fff;
+    color: var(--cardcrafter-text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all var(--cardcrafter-transition);
+    min-width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cardcrafter-pagination-btn:hover:not(:disabled) {
+    border-color: var(--cardcrafter-link-color);
+    color: var(--cardcrafter-link-color);
+    transform: translateY(-2px);
+}
+
+.cardcrafter-pagination-btn:disabled {
+    background: #f5f5f5;
+    color: #d1d5db;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.cardcrafter-pagination-current {
+    background: var(--cardcrafter-link-color);
+    color: #fff;
+    border-color: var(--cardcrafter-link-color);
+}
+
+.cardcrafter-pagination-current:hover {
+    background: var(--cardcrafter-link-hover);
+    border-color: var(--cardcrafter-link-hover);
+    color: #fff;
+    transform: none;
+}
+
+.cardcrafter-pagination-prev,
+.cardcrafter-pagination-next {
+    font-weight: 600;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+@media (max-width: 600px) {
+    .cardcrafter-pagination {
+        padding: 16px;
+        gap: 12px;
+    }
+    
+    .cardcrafter-pagination-controls {
+        gap: 4px;
+    }
+    
+    .cardcrafter-pagination-btn {
+        min-width: 40px;
+        height: 40px;
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+    
+    .cardcrafter-pagination-prev,
+    .cardcrafter-pagination-next {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
+
+/* ==========================================================================
+   Dark Mode Support
+   ========================================================================== */
 @media (prefers-color-scheme: dark) {
     :root {
         --cardcrafter-card-bg: #1f2937;
@@ -386,5 +524,21 @@
         --cardcrafter-title-color: #f9fafb;
         --cardcrafter-subtitle-color: #9ca3af;
         --cardcrafter-text-color: #d1d5db;
+    }
+    
+    .cardcrafter-pagination {
+        background: #374151;
+        border-color: #4b5563;
+    }
+    
+    .cardcrafter-pagination-btn {
+        background: #4b5563;
+        border-color: #6b7280;
+        color: #f9fafb;
+    }
+    
+    .cardcrafter-pagination-btn:disabled {
+        background: #374151;
+        color: #6b7280;
     }
 }
