@@ -207,7 +207,7 @@ class CardCrafter
         wp_register_script(
             'cardcrafter-block',
             CARDCRAFTER_URL . 'assets/js/block.js',
-            array('wp-blocks', 'wp-block-editor', 'wp-components', 'wp-element', 'wp-server-side-render'),
+            array('wp-blocks', 'wp-block-editor', 'wp-components', 'wp-element'),
             CARDCRAFTER_VERSION,
             true
         );
@@ -246,21 +246,12 @@ class CardCrafter
     }
 
     /**
-     * Render callback for the Gutenberg block.
+     * Render callback for the Gutenberg block (frontend only).
      */
     public function render_block_callback($attributes)
     {
-        // If no source is provided, show a placeholder message
-        $source = $attributes['source'] ?? '';
-        if (empty($source)) {
-            return '<div style="padding: 20px; text-align: center; border: 1px dashed #ccc; background: #f9f9f9; color: #666;">
-                        <p>📝 Configure your data source in the sidebar to see live preview</p>
-                        <p style="font-size: 12px;">Try one of the demo data sources to get started quickly.</p>
-                    </div>';
-        }
-
         $shortcode_attrs = array(
-            'source' => $source,
+            'source' => $attributes['source'] ?? '',
             'layout' => $attributes['layout'] ?? 'grid',
             'search' => ($attributes['search'] ?? true) ? 'true' : 'false',
             'sort' => ($attributes['sort'] ?? true) ? 'true' : 'false',
