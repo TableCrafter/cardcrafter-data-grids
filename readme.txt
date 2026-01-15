@@ -1,6 +1,6 @@
 === CardCrafter – Data-Driven Card Grids ===
 Contributors: fahdi
-Tags: json, cards, grid, portfolio, team
+Tags: json, api, cards, grid, responsive
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
