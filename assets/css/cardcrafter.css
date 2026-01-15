@@ -32,6 +32,54 @@
 }
 
 /* ==========================================================================
+   Demo Banner
+   ========================================================================== */
+.cardcrafter-demo-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: var(--cardcrafter-card-radius);
+    margin-bottom: var(--cardcrafter-gap);
+    text-align: center;
+}
+
+.cardcrafter-demo-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.cardcrafter-demo-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cardcrafter-demo-content p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.cardcrafter-try-own-data {
+    color: white;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    transition: all 0.2s ease;
+}
+
+.cardcrafter-try-own-data:hover {
+    color: white;
+    border-bottom-color: white;
+    text-decoration: none;
+}
+
+/* ==========================================================================
    Loading State
    ========================================================================== */
 .cardcrafter-loading {

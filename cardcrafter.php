@@ -3,7 +3,7 @@
  * Plugin Name: CardCrafter – Data-Driven Card Grids
  * Plugin URI: https://github.com/TableCrafter/cardcrafter-data-grids
  * Description: Transform JSON data into beautiful, responsive card grids. Perfect for team directories, product showcases, and portfolio displays.
- * Version: 1.4.1
+ * Version: 1.5.0
  * Author: fahdi
  * Author URI: https://github.com/TableCrafter
  * License: GPLv2 or later
@@ -20,7 +20,7 @@ Note: Plugin name and slug updated to CardCrafter – Data-Driven Card Grids / c
 All functional code remains unchanged. These changes are recommended by an AI and do not replace WordPress.org volunteer review guidance.
 */
 
-define('CARDCRAFTER_VERSION', '1.4.1');
+define('CARDCRAFTER_VERSION', '1.5.0');
 define('CARDCRAFTER_URL', plugin_dir_url(__FILE__));
 define('CARDCRAFTER_PATH', plugin_dir_path(__FILE__));
 
@@ -339,8 +339,12 @@ class CardCrafter
         $atts['columns'] = absint($atts['columns']);
         $atts['items_per_page'] = min(100, max(1, absint($atts['items_per_page']))); // Limit between 1-100
 
+        // Auto-demo mode: Show demo data if no source provided
         if (empty($atts['source'])) {
-            return '<p>' . esc_html__('Error: CardCrafter requires a "source" attribute.', 'cardcrafter-data-grids') . '</p>';
+            $atts['source'] = CARDCRAFTER_URL . 'demo-data/team.json';
+            $demo_mode = true;
+        } else {
+            $demo_mode = false;
         }
 
         // Try Cache First (SWR pattern)
@@ -370,6 +374,14 @@ class CardCrafter
         ?>
         <div id="<?php echo esc_attr($atts['id']); ?>" class="cardcrafter-container"
             data-config='<?php echo esc_attr(wp_json_encode($config)); ?>'>
+            <?php if ($demo_mode): ?>
+                <div class="cardcrafter-demo-banner">
+                    <div class="cardcrafter-demo-content">
+                        <span class="cardcrafter-demo-badge">🚀 Demo Mode</span>
+                        <p>This is sample team data. <strong><a href="#" class="cardcrafter-try-own-data">Try Your Own Data →</a></strong></p>
+                    </div>
+                </div>
+            <?php endif; ?>
             <div class="cardcrafter-loading">
                 <div class="cardcrafter-spinner"></div>
                 <p><?php esc_html_e('Loading CardCrafter...', 'cardcrafter-data-grids'); ?></p>
