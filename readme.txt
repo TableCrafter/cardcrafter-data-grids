@@ -4,7 +4,7 @@ Tags: json, api, cards, grid, responsive
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -103,9 +103,9 @@ CardCrafter works with any publicly accessible JSON endpoint. The API must allow
 
 2. **Block Editor Demo Data Selection** - Sidebar dropdown featuring built-in demo sources (Team Directory, Product Showcase, Portfolio Gallery) for quick testing and prototyping.
 
-3. **Frontend Grid Layout (Team Directory)** - Responsive 3-column grid displaying team member cards with photos, names, roles, and contact information. Clean hover effects and professional styling.
+3. **Shortcode builder -  Grid Layout (Team Directory)** - Responsive 4-column grid displaying team member cards with photos, names, roles, and contact information. Clean hover effects and professional styling.
 
-4. **Frontend Masonry Layout (Team Directory)** - Pinterest-style masonry layout accommodating varied content heights while maintaining visual balance and readability.
+4. **Shortcode builder - Masonry Layout (Team Directory)** - Pinterest-style masonry layout accommodating varied content heights while maintaining visual balance and readability.
 
 5. **Frontend List Layout (Team Directory)** - Horizontal list view optimized for detailed content display, perfect for directory-style information with extended descriptions.
 
@@ -120,6 +120,12 @@ CardCrafter works with any publicly accessible JSON endpoint. The API must allow
 10. **Mobile Responsive Design** - Cards automatically adapt to smaller screens with optimized spacing, typography, and touch-friendly interactions.
 
 == Changelog ==
+
+= 1.3.1 =
+* Security: Fixed information disclosure vulnerability in error message handling.
+* Security: Added error message sanitization to prevent exposure of sensitive server details.
+* Security: Implemented safe error mapping for HTTP, SSL, and cURL errors.
+* Improvement: Enhanced error logging for administrators while protecting end users.
 
 = 1.3.0 =
 * Feature: Added native Gutenberg Block support with visual configuration.

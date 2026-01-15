@@ -3,7 +3,7 @@
  * Plugin Name: CardCrafter – Data-Driven Card Grids
  * Plugin URI: https://github.com/TableCrafter/cardcrafter-data-grids
  * Description: Transform JSON data into beautiful, responsive card grids. Perfect for team directories, product showcases, and portfolio displays.
- * Version: 1.3.0
+ * Version: 1.3.1
  * Author: fahdi
  * Author URI: https://github.com/TableCrafter
  * License: GPLv2 or later
@@ -20,7 +20,7 @@ Note: Plugin name and slug updated to CardCrafter – Data-Driven Card Grids / c
 All functional code remains unchanged. These changes are recommended by an AI and do not replace WordPress.org volunteer review guidance.
 */
 
-define('CARDCRAFTER_VERSION', '1.3.0');
+define('CARDCRAFTER_VERSION', '1.3.1');
 define('CARDCRAFTER_URL', plugin_dir_url(__FILE__));
 define('CARDCRAFTER_PATH', plugin_dir_path(__FILE__));
 
@@ -416,7 +416,8 @@ class CardCrafter
 
         if (is_wp_error($response)) {
             // This handles both connection errors AND blocked local IPs
-            wp_send_json_error($response->get_error_message());
+            // Security fix: Use sanitized error message to prevent information disclosure
+            wp_send_json_error($this->sanitize_error_message($response));
         }
 
         $body = wp_remote_retrieve_body($response);
@@ -524,6 +525,54 @@ class CardCrafter
         }
 
         return $ip ?: 'unknown_' . md5(wp_json_encode($_SERVER));
+    }
+
+    /**
+     * Sanitize error messages to prevent information disclosure.
+     * 
+     * Maps internal error codes to safe, user-friendly messages while
+     * preserving debugging information in error logs.
+     * 
+     * @param WP_Error $error The WordPress error object.
+     * @return string Safe error message for frontend display.
+     */
+    private function sanitize_error_message($error): string
+    {
+        $error_code = $error->get_error_code();
+        $error_message = $error->get_error_message();
+        
+        // Log the actual error for debugging (admin only)
+        if (current_user_can('manage_options')) {
+            error_log('CardCrafter Error [' . $error_code . ']: ' . $error_message);
+        }
+
+        // Map error codes to safe user messages
+        $safe_messages = array(
+            'http_request_failed' => 'Unable to connect to the data source. Please check the URL and try again.',
+            'http_request_timeout' => 'Request timed out. The data source may be temporarily unavailable.',
+            'http_404' => 'Data source not found. Please verify the URL is correct.',
+            'http_403' => 'Access denied to the data source.',
+            'http_500' => 'The data source is experiencing technical difficulties.',
+            'http_502' => 'The data source is temporarily unavailable.',
+            'http_503' => 'The data source is temporarily unavailable.',
+        );
+
+        // Check message content for sensitive patterns first (more specific)
+        if (strpos($error_message, 'cURL error') !== false) {
+            return 'Network connection error. Please try again later.';
+        }
+        
+        if (strpos($error_message, 'SSL') !== false) {
+            return 'Secure connection error. Please verify the URL uses HTTPS.';
+        }
+
+        // Check for specific HTTP error codes
+        if (strpos($error_code, 'http_') === 0) {
+            return $safe_messages[$error_code] ?? 'Unable to retrieve data from the source.';
+        }
+
+        // Generic fallback for any unhandled error types
+        return 'Unable to retrieve data. Please check your data source URL.';
     }
 }
 
