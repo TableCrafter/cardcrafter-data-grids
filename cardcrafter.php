@@ -3,7 +3,7 @@
  * Plugin Name: CardCrafter – Data-Driven Card Grids
  * Plugin URI: https://github.com/TableCrafter/cardcrafter-data-grids
  * Description: Transform JSON data into beautiful, responsive card grids. Perfect for team directories, product showcases, and portfolio displays.
- * Version: 1.5.0
+ * Version: 1.6.0
  * Author: fahdi
  * Author URI: https://github.com/TableCrafter
  * License: GPLv2 or later
@@ -20,7 +20,7 @@ Note: Plugin name and slug updated to CardCrafter – Data-Driven Card Grids / c
 All functional code remains unchanged. These changes are recommended by an AI and do not replace WordPress.org volunteer review guidance.
 */
 
-define('CARDCRAFTER_VERSION', '1.5.0');
+define('CARDCRAFTER_VERSION', '1.6.0');
 define('CARDCRAFTER_URL', plugin_dir_url(__FILE__));
 define('CARDCRAFTER_PATH', plugin_dir_path(__FILE__));
 
@@ -252,6 +252,9 @@ class CardCrafter
     {
         $shortcode_attrs = array(
             'source' => $attributes['source'] ?? '',
+            'wp_query' => $attributes['wp_query'] ?? '',
+            'post_type' => $attributes['post_type'] ?? 'post',
+            'posts_per_page' => $attributes['posts_per_page'] ?? 12,
             'layout' => $attributes['layout'] ?? 'grid',
             'search' => ($attributes['search'] ?? true) ? 'true' : 'false',
             'sort' => ($attributes['sort'] ?? true) ? 'true' : 'false',
@@ -322,6 +325,9 @@ class CardCrafter
     {
         $atts = shortcode_atts(array(
             'source' => '',
+            'wp_query' => '',
+            'post_type' => 'post',
+            'posts_per_page' => 12,
             'id' => 'cardcrafter-' . uniqid(),
             'layout' => 'grid',
             'columns' => 3,
@@ -335,9 +341,17 @@ class CardCrafter
 
         // Sanitize inputs
         $atts['source'] = esc_url_raw($atts['source']);
+        $atts['wp_query'] = sanitize_text_field($atts['wp_query']);
+        $atts['post_type'] = sanitize_text_field($atts['post_type']);
+        $atts['posts_per_page'] = min(100, max(1, absint($atts['posts_per_page'])));
         $atts['layout'] = sanitize_key($atts['layout']);
         $atts['columns'] = absint($atts['columns']);
         $atts['items_per_page'] = min(100, max(1, absint($atts['items_per_page']))); // Limit between 1-100
+
+        // WordPress Native Data Mode
+        if (!empty($atts['wp_query']) || (!empty($atts['post_type']) && empty($atts['source']))) {
+            return $this->render_wordpress_data($atts);
+        }
 
         // Auto-demo mode: Show demo data if no source provided
         if (empty($atts['source'])) {
@@ -588,6 +602,113 @@ class CardCrafter
 
         // Generic fallback for any unhandled error types
         return 'Unable to retrieve data. Please check your data source URL.';
+    }
+
+    /**
+     * Render WordPress native data as cards
+     */
+    public function render_wordpress_data($atts)
+    {
+        // Build WP_Query arguments
+        $query_args = array(
+            'post_type' => $atts['post_type'],
+            'posts_per_page' => $atts['posts_per_page'],
+            'post_status' => 'publish',
+            'meta_query' => array(),
+            'tax_query' => array()
+        );
+
+        // Parse custom wp_query string (e.g., "category=news&author=5")
+        if (!empty($atts['wp_query'])) {
+            parse_str($atts['wp_query'], $custom_args);
+            $query_args = array_merge($query_args, $custom_args);
+        }
+
+        // Execute WordPress query
+        $posts = get_posts($query_args);
+        
+        if (empty($posts)) {
+            return '<div class="cardcrafter-no-results"><p>No WordPress posts found matching your criteria.</p></div>';
+        }
+
+        // Convert WordPress posts to CardCrafter data format
+        $card_data = array();
+        foreach ($posts as $post) {
+            $featured_image = get_the_post_thumbnail_url($post->ID, 'medium');
+            
+            $card_item = array(
+                'id' => $post->ID,
+                'title' => get_the_title($post->ID),
+                'subtitle' => get_the_date('F j, Y', $post->ID),
+                'description' => wp_trim_words(get_the_excerpt($post->ID), 20, '...'),
+                'link' => get_permalink($post->ID),
+                'image' => $featured_image ?: $this->get_placeholder_image(get_the_title($post->ID)),
+                'post_type' => $post->post_type,
+                'author' => get_the_author_meta('display_name', $post->post_author)
+            );
+
+            // Add custom fields support
+            $custom_fields = get_fields($post->ID); // ACF support
+            if ($custom_fields) {
+                $card_item = array_merge($card_item, $custom_fields);
+            }
+
+            $card_data[] = $card_item;
+        }
+
+        // Convert to JSON for JavaScript
+        $json_data = wp_json_encode($card_data);
+        $wp_data_mode = true;
+
+        // Enqueue assets
+        wp_enqueue_script('cardcrafter-lib');
+        wp_enqueue_style('cardcrafter-style');
+
+        // Build config for WordPress data
+        $config = array(
+            'data' => $card_data, // Pass data directly instead of URL
+            'layout' => $atts['layout'],
+            'columns' => $atts['columns'],
+            'itemsPerPage' => $atts['items_per_page'],
+            'wpDataMode' => true,
+            'fields' => array(
+                'image' => sanitize_key($atts['image_field']),
+                'title' => sanitize_key($atts['title_field']),
+                'subtitle' => sanitize_key($atts['subtitle_field']),
+                'description' => sanitize_key($atts['description_field']),
+                'link' => sanitize_key($atts['link_field'])
+            )
+        );
+
+        ob_start();
+        ?>
+        <div id="<?php echo esc_attr($atts['id']); ?>" class="cardcrafter-container"
+            data-config='<?php echo esc_attr(wp_json_encode($config)); ?>'>
+            <div class="cardcrafter-wp-banner">
+                <div class="cardcrafter-wp-content">
+                    <span class="cardcrafter-wp-badge">📝 WordPress Data</span>
+                    <p>Showing <?php echo count($card_data); ?> <?php echo esc_html($atts['post_type']); ?>(s) from your site</p>
+                </div>
+            </div>
+            <div class="cardcrafter-loading">
+                <div class="cardcrafter-spinner"></div>
+                <p><?php esc_html_e('Loading WordPress content...', 'cardcrafter-data-grids'); ?></p>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Generate placeholder image for WordPress posts
+     */
+    private function get_placeholder_image($title)
+    {
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">' .
+            '<rect fill="#e0e0e0" width="400" height="300"/>' .
+            '<text fill="#888" font-family="sans-serif" font-size="24" text-anchor="middle" x="200" y="160">' .
+            esc_html(substr($title, 0, 20)) . '</text></svg>';
+        return 'data:image/svg+xml;base64,' . base64_encode($svg);
     }
 }
 

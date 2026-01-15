@@ -74,7 +74,13 @@
      */
     CardCrafter.prototype.init = function () {
         this.container.innerHTML = '<div class="cardcrafter-loading"><div class="cardcrafter-spinner"></div><p>Loading cards...</p></div>';
-        this.fetchData();
+        
+        // WordPress data mode - data passed directly
+        if (this.options.wpDataMode && this.options.data) {
+            this.processData(this.options.data);
+        } else {
+            this.fetchData();
+        }
     };
 
     /**

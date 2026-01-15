@@ -80,6 +80,42 @@
 }
 
 /* ==========================================================================
+   WordPress Data Banner
+   ========================================================================== */
+.cardcrafter-wp-banner {
+    background: linear-gradient(135deg, #0073aa 0%, #005177 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: var(--cardcrafter-card-radius);
+    margin-bottom: var(--cardcrafter-gap);
+    text-align: center;
+}
+
+.cardcrafter-wp-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.cardcrafter-wp-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cardcrafter-wp-content p {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ==========================================================================
    Loading State
    ========================================================================== */
 .cardcrafter-loading {
