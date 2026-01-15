@@ -14,8 +14,6 @@ Transform JSON data into beautiful, responsive card grids. Perfect for team dire
 
 Don't take our word for it — try CardCrafter live. **[Full-featured demo](https://tastewp.com/plugins/cardcrafter-data-grids)** on a real WordPress site. No signup, no download, no risk.
 
-60 seconds to "wow."
-
 **CardCrafter** transforms any JSON data source into stunning, responsive card layouts with zero coding required.
 
 Whether you're building a team directory, product showcase, or portfolio gallery, CardCrafter makes it effortless. Just paste a JSON URL and watch your data come alive as beautiful cards.
