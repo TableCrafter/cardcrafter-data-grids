@@ -74,12 +74,18 @@ $portfolio_url = CARDCRAFTER_URL . 'demo-data/portfolio.json';
             margin-bottom: 4px;
         }
         .cc-control select,
-        .cc-control input {
+        .cc-control input[type="text"],
+        .cc-control input[type="url"] {
             width: 100%;
             padding: 8px 12px;
             border: 1px solid #d1d5db;
             border-radius: 6px;
             font-size: 14px;
+        }
+        .cc-control input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+            transform: scale(1.3);
         }
         
         /* Demo Preview - Clean */
