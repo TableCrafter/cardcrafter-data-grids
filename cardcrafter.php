@@ -50,6 +50,7 @@ class CardCrafter
         add_action('wp_enqueue_scripts', array($this, 'register_assets'));
         add_action('admin_enqueue_scripts', array($this, 'register_assets'));
         add_shortcode('cardcrafter-data-grids', array($this, 'render_cards'));
+        add_shortcode('cardcrafter', array($this, 'render_cards'));
         add_action('admin_menu', array($this, 'add_admin_menu'));
         
         // Activation Notice & Redirect
@@ -841,7 +842,7 @@ class CardCrafter
         $atts['posts_per_page'] = apply_filters('cardcrafter_max_cards_per_page', $atts['posts_per_page']);
 
         // WordPress Native Data Mode
-        if (!empty($atts['wp_query']) || (!empty($atts['post_type']) && empty($atts['source']))) {
+        if (!empty($atts['wp_query']) || (!empty($atts['post_type']) && empty($atts['source'])) || $atts['source'] === 'wp_posts') {
             return $this->render_wordpress_data($atts);
         }
 
@@ -893,6 +894,19 @@ class CardCrafter
                 <p><?php esc_html_e('Loading CardCrafter...', 'cardcrafter-data-grids'); ?></p>
             </div>
         </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof CardCrafter !== 'undefined') {
+                var container = document.getElementById('<?php echo esc_js($atts['id']); ?>');
+                if (container) {
+                    var config = JSON.parse(container.getAttribute('data-config'));
+                    new CardCrafter(config);
+                }
+            } else {
+                console.error('CardCrafter library not loaded');
+            }
+        });
+        </script>
         <?php
         return ob_get_clean();
     }
@@ -1242,6 +1256,27 @@ class CardCrafter
                 <p><?php esc_html_e('Loading WordPress content...', 'cardcrafter-data-grids'); ?></p>
             </div>
         </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof CardCrafter !== 'undefined') {
+                var container = document.getElementById('<?php echo esc_js($atts['id']); ?>');
+                if (container) {
+                    var config = JSON.parse(container.getAttribute('data-config'));
+                    new CardCrafter({
+                        selector: '#<?php echo esc_js($atts['id']); ?>',
+                        data: config.data,
+                        layout: config.layout,
+                        columns: config.columns,
+                        itemsPerPage: config.itemsPerPage,
+                        wpDataMode: config.wpDataMode,
+                        fields: config.fields
+                    });
+                }
+            } else {
+                console.error('CardCrafter library not loaded');
+            }
+        });
+        </script>
         <?php
         return ob_get_clean();
     }
