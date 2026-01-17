@@ -1,12 +1,12 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const urlInput = document.getElementById('cardcrafter-preview-url');
-    const layoutSelect = document.getElementById('cardcrafter-layout');
-    const columnsSelect = document.getElementById('cardcrafter-columns');
-    const previewBtn = document.getElementById('cardcrafter-preview-btn');
-    const copyBtn = document.getElementById('cardcrafter-copy-shortcode');
-    const shortcodeDisplay = document.getElementById('cardcrafter-shortcode-display');
-    const container = document.getElementById('cardcrafter-preview-container');
-    const demoLinks = document.querySelectorAll('.cardcrafter-demo-links a');
+    const urlInput = document.getElementById('cc-preview-url');
+    const layoutSelect = document.getElementById('cc-layout');
+    const columnsSelect = document.getElementById('cc-columns');
+    const previewBtn = document.getElementById('cc-preview-btn');
+    const copyBtn = document.getElementById('cc-copy-shortcode');
+    const shortcodeDisplay = document.getElementById('cc-shortcode-display');
+    const container = document.getElementById('cc-preview-container');
+    const demoLinks = document.querySelectorAll('.cc-demo-card');
 
     if (!urlInput) return;
 
@@ -15,12 +15,80 @@ document.addEventListener('DOMContentLoaded', function () {
         const url = urlInput.value.trim() || 'URL';
         const layout = layoutSelect.value;
         const columns = columnsSelect.value;
-        shortcodeDisplay.innerText = `[cardcrafter-wp-grid-layouts source="${url}" layout="${layout}" columns="${columns}"]`;
+        const enableSearch = document.getElementById('cc-enable-search');
+        const enableFilters = document.getElementById('cc-enable-filters');
+        const showDescription = document.getElementById('cc-show-description');
+        const showButtons = document.getElementById('cc-show-buttons');
+        const enableExport = document.getElementById('cc-enable-export');
+        const showImage = document.getElementById('cc-show-image');
+        const cardStyle = document.getElementById('cc-card-style');
+        const enablePagination = document.getElementById('cc-enable-pagination');
+        const itemsPerPage = document.getElementById('cc-items-per-page');
+        
+        let shortcode = `[cardcrafter source="${url}" layout="${layout}" columns="${columns}"`;
+        
+        // Add optional parameters only if they differ from defaults
+        if (enableSearch && !enableSearch.checked) {
+            shortcode += ` search="false"`;
+        }
+        if (enableFilters && !enableFilters.checked) {
+            shortcode += ` filters="false"`;
+        }
+        if (showDescription && !showDescription.checked) {
+            shortcode += ` show_description="false"`;
+        }
+        if (showButtons && !showButtons.checked) {
+            shortcode += ` show_cta="false"`;
+        }
+        if (enableExport && !enableExport.checked) {
+            shortcode += ` export="false"`;
+        }
+        if (showImage && !showImage.checked) {
+            shortcode += ` show_image="false"`;
+        }
+        if (cardStyle && cardStyle.value !== 'default') {
+            shortcode += ` style="${cardStyle.value}"`;
+        }
+        if (enablePagination && !enablePagination.checked) {
+            shortcode += ` pagination="false"`;
+        }
+        if (itemsPerPage && itemsPerPage.value !== '6') {
+            shortcode += ` items_per_page="${itemsPerPage.value}"`;
+        }
+        
+        shortcode += `]`;
+        shortcodeDisplay.innerText = shortcode;
     }
 
     urlInput.addEventListener('input', updateShortcode);
     layoutSelect.addEventListener('change', updateShortcode);
     columnsSelect.addEventListener('change', updateShortcode);
+
+    // Add event listeners for new controls
+    const additionalControls = [
+        'cc-enable-search',
+        'cc-enable-filters',
+        'cc-show-description', 
+        'cc-show-buttons',
+        'cc-enable-export',
+        'cc-show-image',
+        'cc-card-style',
+        'cc-enable-pagination',
+        'cc-items-per-page'
+    ];
+
+    additionalControls.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', function() {
+                updateShortcode();
+                // Auto-trigger preview when display options change
+                if (urlInput.value.trim()) {
+                    previewBtn.click();
+                }
+            });
+        }
+    });
 
     // Load demo URL on click
     demoLinks.forEach(link => {
@@ -51,11 +119,31 @@ document.addEventListener('DOMContentLoaded', function () {
             // Use the secure proxy for admin previews too
             const proxyUrl = `${cardcrafterAdmin.ajaxurl}?action=cardcrafter_proxy_fetch&url=${encodeURIComponent(url)}&nonce=${cardcrafterAdmin.nonce}`;
 
+            // Get additional options
+            const enableSearch = document.getElementById('cc-enable-search');
+            const enableFilters = document.getElementById('cc-enable-filters');
+            const showDescription = document.getElementById('cc-show-description');
+            const showButtons = document.getElementById('cc-show-buttons');
+            const enableExport = document.getElementById('cc-enable-export');
+            const showImage = document.getElementById('cc-show-image');
+            const cardStyle = document.getElementById('cc-card-style');
+            const enablePagination = document.getElementById('cc-enable-pagination');
+            const itemsPerPage = document.getElementById('cc-items-per-page');
+
             new CardCrafter({
                 selector: '#' + cardId,
                 source: proxyUrl,
                 layout: layoutSelect.value,
-                columns: parseInt(columnsSelect.value)
+                columns: parseInt(columnsSelect.value),
+                search: enableSearch ? enableSearch.checked : true,
+                filters: enableFilters ? enableFilters.checked : true,
+                showDescription: showDescription ? showDescription.checked : true,
+                showButtons: showButtons ? showButtons.checked : true,
+                enableExport: enableExport ? enableExport.checked : true,
+                showImage: showImage ? showImage.checked : true,
+                cardStyle: cardStyle ? cardStyle.value : 'default',
+                pagination: enablePagination ? enablePagination.checked : true,
+                itemsPerPage: itemsPerPage ? parseInt(itemsPerPage.value) : 6
             });
         } else {
             container.innerHTML = `<div class="notice notice-error inline"><p>${cardcrafterAdmin.i18n.libNotLoaded}</p></div>`;
