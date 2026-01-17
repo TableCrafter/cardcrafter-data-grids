@@ -266,11 +266,11 @@ $portfolio_url = CARDCRAFTER_URL . 'demo-data/portfolio.json';
                 </code>
                 
                 <h4>Quick Examples</h4>
-                <ul style="margin: 0; padding-left: 16px;">
-                    <li>Team directory</li>
-                    <li>Product showcase</li>
-                    <li>Portfolio gallery</li>
-                    <li>Blog post grid</li>
+                <ul style="margin: 0; padding-left: 0; list-style: none;">
+                    <li><a href="#" class="demo-link" data-url="<?php echo esc_url($team_url); ?>" style="display: block; padding: 8px 12px; text-decoration: none; border-radius: 4px; margin-bottom: 4px; color: #374151; border: 1px solid #e5e7eb;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">👥 Team directory</a></li>
+                    <li><a href="#" class="demo-link" data-url="<?php echo esc_url($products_url); ?>" style="display: block; padding: 8px 12px; text-decoration: none; border-radius: 4px; margin-bottom: 4px; color: #374151; border: 1px solid #e5e7eb;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">🛍️ Product showcase</a></li>
+                    <li><a href="#" class="demo-link" data-url="<?php echo esc_url($portfolio_url); ?>" style="display: block; padding: 8px 12px; text-decoration: none; border-radius: 4px; margin-bottom: 4px; color: #374151; border: 1px solid #e5e7eb;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">🎨 Portfolio gallery</a></li>
+                    <li style="opacity: 0.6;"><span style="display: block; padding: 8px 12px; color: #9ca3af; font-style: italic;">📝 Blog post grid (WordPress only)</span></li>
                 </ul>
             </aside>
         </div>
@@ -323,6 +323,14 @@ $portfolio_url = CARDCRAFTER_URL . 'demo-data/portfolio.json';
         
         // Event handlers
         $('#dataset, #layout, #columns, #search').on('change', loadDemo);
+        
+        // Sidebar demo links
+        $('.demo-link').on('click', function(e) {
+            e.preventDefault();
+            const url = $(this).data('url');
+            $('#dataset').val(url);
+            loadDemo();
+        });
         
         // Auto-load demo
         setTimeout(loadDemo, 1000);
