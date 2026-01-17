@@ -282,8 +282,6 @@ class CardCrafter
                 </div>
             </div>
         </div>
-
-        </div>
         <?php
     }
 
