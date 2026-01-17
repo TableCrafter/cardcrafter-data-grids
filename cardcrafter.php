@@ -52,6 +52,9 @@ class CardCrafter
         add_shortcode('cardcrafter-data-grids', array($this, 'render_cards'));
         add_action('admin_menu', array($this, 'add_admin_menu'));
         
+        // Welcome Screen
+        add_action('admin_init', array($this, 'welcome_redirect'));
+        
         // Gutenberg Block Support
         add_action('init', array($this, 'register_block'));
 
@@ -65,11 +68,42 @@ class CardCrafter
             wp_schedule_event(time(), 'hourly', 'cardcrafter_refresher_cron');
         }
 
+        // Lead Magnet Handler
+        add_action('wp_ajax_cc_subscribe_lead', array($this, 'handle_lead_subscription'));
+        add_action('wp_ajax_nopriv_cc_subscribe_lead', array($this, 'handle_lead_subscription'));
+
         // Elementor Integration
         add_action('plugins_loaded', array($this, 'init_elementor_integration'));
         
         // License Manager Integration
         add_action('plugins_loaded', array($this, 'init_license_manager'));
+    }
+
+    /**
+     * Plugin activation hook.
+     */
+    public static function activate()
+    {
+        add_option('cc_do_activation_redirect', true);
+    }
+
+    /**
+     * Welcome page redirect handler.
+     */
+    public function welcome_redirect()
+    {
+        if (!get_option('cc_do_activation_redirect', false)) {
+            return;
+        }
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            return;
+        }
+        if (is_network_admin()) {
+            return;
+        }
+        delete_option('cc_do_activation_redirect');
+        wp_safe_redirect(admin_url('admin.php?page=cardcrafter-welcome'));
+        exit;
     }
 
     /**
@@ -85,6 +119,15 @@ class CardCrafter
             array($this, 'render_admin_page'),
             'dashicons-grid-view',
             21
+        );
+
+        add_submenu_page(
+            'cardcrafter',
+            __('Welcome to CardCrafter', 'cardcrafter-data-grids'),
+            __('Welcome', 'cardcrafter-data-grids'),
+            'manage_options',
+            'cardcrafter-welcome',
+            array($this, 'render_welcome_page')
         );
     }
 
@@ -800,7 +843,73 @@ class CardCrafter
         require_once CARDCRAFTER_PATH . 'includes/class-cardcrafter-license-manager.php';
         CardCrafter_License_Manager::get_instance();
     }
+
+    /**
+     * Render the welcome page.
+     */
+    public function render_welcome_page()
+    {
+        // Enqueue assets for the welcome page
+        wp_enqueue_script('cardcrafter-lib');
+        wp_enqueue_style('cardcrafter-style');
+        
+        include CARDCRAFTER_PATH . 'views/welcome.php';
+    }
+
+    /**
+     * Handle Lead Subscription (Lead Magnet).
+     * 
+     * Validates email and sends to external API.
+     * 
+     * @return void
+     */
+    public function handle_lead_subscription()
+    {
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cc_lead_nonce')) {
+            wp_send_json_error('Invalid nonce');
+            return;
+        }
+
+        // Validate email
+        $email = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
+        if (!is_email($email)) {
+            wp_send_json_error('Invalid email address');
+            return;
+        }
+
+        // Send lead to external API (you can customize this endpoint)
+        $response = wp_remote_post('https://fahdmurtaza.com/api/cardcrafter-lead', array(
+            'body' => array(
+                'email' => $email,
+                'plugin_version' => CARDCRAFTER_VERSION,
+                'site_url' => get_site_url(),
+                'timestamp' => current_time('mysql'),
+                'source' => 'welcome_screen'
+            ),
+            'timeout' => 15,
+            'headers' => array(
+                'Content-Type' => 'application/x-www-form-urlencoded'
+            )
+        ));
+
+        // Fallback: send email directly if API fails
+        if (is_wp_error($response)) {
+            wp_mail(
+                'info@fahdmurtaza.com',
+                'CardCrafter Lead: ' . $email,
+                "New subscriber from CardCrafter plugin:\n\nEmail: " . $email . "\nSite: " . get_site_url() . "\nDate: " . current_time('mysql') . "\n\nNote: API call failed, sent via email fallback."
+            );
+        }
+
+        wp_send_json_success(array(
+            'message' => 'Subscription successful'
+        ));
+    }
 }
+
+// Register activation hook
+register_activation_hook(__FILE__, array('CardCrafter', 'activate'));
 
 // Initialize
 if (!defined('WP_INT_TEST')) {
