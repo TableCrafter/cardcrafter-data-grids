@@ -759,8 +759,14 @@ class CardCrafter_Elementor_Widget extends Widget_Base
             ]
         ];
 
+        // Force WordPress mode as default - override any saved 'demo' settings
+        $data_mode = $settings['data_mode'] ?? 'wordpress';
+        if (empty($data_mode)) {
+            $data_mode = 'wordpress';
+        }
+
         // Configure data source
-        switch ($settings['data_mode']) {
+        switch ($data_mode) {
             case 'wordpress':
                 $config['wpDataMode'] = true;
                 $config['data'] = $this->get_wordpress_data($settings);
@@ -795,8 +801,14 @@ class CardCrafter_Elementor_Widget extends Widget_Base
      */
     private function render_widget_container($container_id, $config, $settings)
     {
+        // Force WordPress mode as default - override any saved 'demo' settings  
+        $data_mode = $settings['data_mode'] ?? 'wordpress';
+        if (empty($data_mode)) {
+            $data_mode = 'wordpress';
+        }
+        
         // Add demo banner for demo mode only
-        if (($settings['data_mode'] ?? 'wordpress') === 'demo') {
+        if ($data_mode === 'demo') {
             $this->render_demo_banner();
         }
 
