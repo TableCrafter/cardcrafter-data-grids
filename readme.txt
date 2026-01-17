@@ -4,7 +4,7 @@ Tags: json, cards, grid, data, layout
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.12.0
+Stable tag: 1.12.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -168,6 +168,12 @@ CardCrafter works with any publicly accessible JSON endpoint. The API must allow
 10. **Mobile Responsive Design** - Cards automatically adapt to smaller screens with optimized spacing, typography, and touch-friendly interactions.
 
 == Changelog ==
+
+= 1.12.1 =
+* FIX: Elementor widget now properly enqueues JavaScript and CSS for frontend display
+* FIX: Elementor live preview shows appropriate content based on selected data mode  
+* IMPROVED: Elementor widget defaults to WordPress Posts instead of Demo for better UX
+* IMPROVED: Enhanced editor preview with dynamic status indicators for each data mode
 
 = 1.12.0 =
 * MAJOR: Native WordPress Posts integration - display blog posts as beautiful card grids
