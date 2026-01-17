@@ -4,7 +4,7 @@ Tags: json, cards, grid, data, layout
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.10.0
+Stable tag: 1.11.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,20 @@ CardCrafter works with any publicly accessible JSON endpoint. The API must allow
 10. **Mobile Responsive Design** - Cards automatically adapt to smaller screens with optimized spacing, typography, and touch-friendly interactions.
 
 == Changelog ==
+
+= 1.11.0 =
+* MAJOR: Enhanced admin UI with modern design and comprehensive display options
+* NEW: Complete set of display controls - Enable Search, Enable Filters, Show Description, Show CTAs, Enable Export
+* NEW: Image and pagination controls with card style selection
+* NEW: Help tooltips using CSS pseudo-elements for better user guidance  
+* NEW: Dynamic shortcode generation that only includes non-default parameters
+* NEW: Auto-preview functionality - live updates when options change
+* IMPROVED: Single admin page design removes redundant welcome screen
+* IMPROVED: CSS Grid layout with right-side configuration panel (1600px max-width)
+* IMPROVED: WordPress default color scheme integration throughout
+* FIXED: Live preview now responds to all checkbox options correctly
+* FIXED: Demo loading issues and Quick Start functionality
+* ACCESSIBILITY: Modern design patterns inspired by shadcn/Tailwind with proper contrast
 
 = 1.10.0 =
 * MAJOR: Ultra-modern welcome screen with clean, flat design architecture
