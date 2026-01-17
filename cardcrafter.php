@@ -52,8 +52,10 @@ class CardCrafter
         add_shortcode('cardcrafter-data-grids', array($this, 'render_cards'));
         add_action('admin_menu', array($this, 'add_admin_menu'));
         
-        // Welcome Screen
-        add_action('admin_init', array($this, 'welcome_redirect'));
+        // Activation Notice & Redirect
+        add_action('admin_init', array($this, 'activation_redirect'));
+        add_action('admin_notices', array($this, 'show_activation_notice'));
+        add_action('wp_ajax_cc_dismiss_activation_notice', array($this, 'dismiss_activation_notice'));
         
         // Gutenberg Block Support
         add_action('init', array($this, 'register_block'));
@@ -84,13 +86,14 @@ class CardCrafter
      */
     public static function activate()
     {
+        add_option('cc_show_activation_notice', true);
         add_option('cc_do_activation_redirect', true);
     }
 
     /**
-     * Welcome page redirect handler.
+     * Redirect to CardCrafter admin page on activation.
      */
-    public function welcome_redirect()
+    public function activation_redirect()
     {
         if (!get_option('cc_do_activation_redirect', false)) {
             return;
@@ -102,8 +105,52 @@ class CardCrafter
             return;
         }
         delete_option('cc_do_activation_redirect');
-        wp_safe_redirect(admin_url('admin.php?page=cardcrafter-welcome'));
+        wp_safe_redirect(admin_url('admin.php?page=cardcrafter'));
         exit;
+    }
+
+    /**
+     * Show activation notice on admin page.
+     */
+    public function show_activation_notice()
+    {
+        if (!get_option('cc_show_activation_notice', false)) {
+            return;
+        }
+        
+        // Only show on CardCrafter admin page
+        if (!isset($_GET['page']) || $_GET['page'] !== 'cardcrafter') {
+            return;
+        }
+        
+        ?>
+        <div class="notice notice-success is-dismissible" id="cc-activation-notice">
+            <p><strong>🎉 CardCrafter Activated Successfully!</strong></p>
+            <p>Welcome to CardCrafter! Try the Quick Start demos below to see how easy it is to create beautiful card layouts from any JSON data source.</p>
+        </div>
+        <script>
+        jQuery(document).ready(function($) {
+            $('#cc-activation-notice').on('click', '.notice-dismiss', function() {
+                $.post(ajaxurl, {
+                    action: 'cc_dismiss_activation_notice',
+                    nonce: '<?php echo wp_create_nonce('cc_dismiss_notice'); ?>'
+                });
+            });
+        });
+        </script>
+        <?php
+    }
+
+    /**
+     * Handle activation notice dismissal.
+     */
+    public function dismiss_activation_notice()
+    {
+        if (!wp_verify_nonce($_POST['nonce'], 'cc_dismiss_notice')) {
+            wp_die('Security check failed');
+        }
+        delete_option('cc_show_activation_notice');
+        wp_die();
     }
 
     /**
@@ -121,14 +168,6 @@ class CardCrafter
             21
         );
 
-        add_submenu_page(
-            'cardcrafter',
-            __('Welcome to CardCrafter', 'cardcrafter-data-grids'),
-            __('Welcome', 'cardcrafter-data-grids'),
-            'manage_options',
-            'cardcrafter-welcome',
-            array($this, 'render_welcome_page')
-        );
     }
 
     /**
@@ -144,142 +183,501 @@ class CardCrafter
         $products_url = CARDCRAFTER_URL . 'demo-data/products.json';
         $portfolio_url = CARDCRAFTER_URL . 'demo-data/portfolio.json';
         ?>
+        <style>
+        .cc-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 32px 24px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        /* Header Section */
+        .cc-header {
+            margin-bottom: 48px;
+        }
+        .cc-badge {
+            background: #f3f4f6;
+            color: #374151;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+        .cc-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            color: #111827;
+        }
+        .cc-subtitle {
+            color: #6b7280;
+            font-size: 16px;
+            margin: 0;
+        }
+        
+        /* Main Two-Column Layout */
+        .cc-main-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+        
+        @media (max-width: 1200px) {
+            .cc-main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .cc-left-column,
+        .cc-right-column {
+            min-width: 0; /* Prevent overflow */
+        }
+        
+        /* Demo Section */
+        .cc-demo {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+        .cc-demo h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            color: #111827;
+        }
+        .cc-demo p {
+            color: #6b7280;
+            margin: 0 0 24px 0;
+        }
+        
+        /* Controls */
+        .cc-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        /* Vertical Controls for Right Column */
+        .cc-controls-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .cc-control label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+        .cc-control select,
+        .cc-control input[type="text"],
+        .cc-control input[type="url"] {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .cc-control input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+            transform: scale(1.3);
+        }
+        .cc-control .description {
+            color: #6b7280;
+            font-size: 12px;
+            margin: 4px 0 0 0;
+        }
+        
+        /* Preview */
+        .cc-preview {
+            min-height: 400px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        
+        /* Demo Grid for Quick Start */
+        .cc-demo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        
+        @media (max-width: 900px) {
+            .cc-demo-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .cc-demo-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 12px;
+            padding: 16px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s ease;
+        }
+        .cc-demo-card:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+            transform: translateY(-1px);
+            text-decoration: none;
+            color: inherit;
+        }
+        .cc-demo-icon {
+            font-size: 32px;
+            line-height: 1;
+        }
+        .cc-demo-content h3 {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+        }
+        .cc-demo-content p {
+            margin: 0;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+        
+        /* Features Grid for Documentation */
+        .cc-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .cc-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        .cc-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 8px 0 8px 0;
+            color: #111827;
+        }
+        .cc-card p {
+            color: #6b7280;
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .cc-icon {
+            font-size: 20px;
+        }
+        
+        /* Help Icons */
+        .cc-help-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            line-height: 16px;
+            text-align: center;
+            background: #6b7280;
+            color: white;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 6px;
+            cursor: help;
+            vertical-align: middle;
+            position: relative;
+        }
+        .cc-help-icon:hover {
+            background: #374151;
+        }
+        
+        /* Tooltip */
+        .cc-help-icon:hover::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: normal;
+            white-space: nowrap;
+            z-index: 1000;
+            max-width: 280px;
+            white-space: normal;
+            width: max-content;
+        }
+        
+        .cc-help-icon:hover::after {
+            content: '';
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #1f2937;
+            z-index: 1000;
+        }
+        
+        .cc-shortcode-display {
+            background: #f3f4f6;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin: 12px 0;
+            display: block;
+        }
+        </style>
+        
         <div class="wrap">
-            <h1 class="wp-heading-inline"><?php esc_html_e('CardCrafter', 'cardcrafter-data-grids'); ?></h1>
-            <p><?php esc_html_e('Transform JSON data into beautiful card layouts.', 'cardcrafter-data-grids'); ?></p>
-            <hr class="wp-header-end">
+            <div class="cc-container">
+                <!-- Header -->
+                <header class="cc-header">
+                    <h1 class="cc-title">CardCrafter</h1>
+                    <p class="cc-subtitle">Transform JSON data into beautiful, responsive card layouts</p>
+                </header>
 
-            <div class="cc-admin-layout" style="display: flex; gap: 20px; margin-top: 20px; align-items: flex-start;">
-
-                <div class="cc-sidebar" style="flex: 0 0 380px;">
-                    <div class="card">
-                        <h2 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 20px;">🚀</span>
-                            <?php esc_html_e('Quick Start Demos', 'cardcrafter-data-grids'); ?>
-                        </h2>
-                        <p style="margin-bottom: 15px;">
-                            <?php esc_html_e('Click any dataset below to instantly load a demo card layout:', 'cardcrafter-data-grids'); ?>
-                        </p>
-                        <ul class="cc-demo-links" style="margin: 0;">
-                            <li style="margin-bottom: 8px;"><a href="#" class="button button-large" style="width: 100%; text-align: left; background: white; border: 1px solid #c3c4c7; color: #1d2327; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='#0073aa'; this.style.color='white'" onmouseout="this.style.background='white'; this.style.color='#1d2327'"
-                                    data-url="<?php echo esc_url($team_url); ?>">👥
-                                    <?php esc_html_e('Team Directory Cards', 'cardcrafter-data-grids'); ?></a></li>
-                            <li style="margin-bottom: 8px;"><a href="#" class="button button-large" style="width: 100%; text-align: left; background: white; border: 1px solid #c3c4c7; color: #1d2327; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='#0073aa'; this.style.color='white'" onmouseout="this.style.background='white'; this.style.color='#1d2327'"
-                                    data-url="<?php echo esc_url($products_url); ?>">🛍️
-                                    <?php esc_html_e('Product Showcase Cards', 'cardcrafter-data-grids'); ?></a></li>
-                            <li style="margin-bottom: 0;"><a href="#" class="button button-large" style="width: 100%; text-align: left; background: white; border: 1px solid #c3c4c7; color: #1d2327; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='#0073aa'; this.style.color='white'" onmouseout="this.style.background='white'; this.style.color='#1d2327'"
-                                    data-url="<?php echo esc_url($portfolio_url); ?>">🎨
-                                    <?php esc_html_e('Portfolio Gallery Cards', 'cardcrafter-data-grids'); ?></a></li>
-                        </ul>
-                        <div style="margin-top: 12px; padding: 8px 12px; background: #f0f6fc; border-radius: 3px; border: 1px solid #c3c4c7;">
-                            <p style="margin: 0; font-size: 12px; color: #646970; text-align: center;">
-                                ↑ <strong>Instant Demo:</strong> No setup required! Each dataset shows different card layouts.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="card" style="margin: 0 0 20px 0; max-width: none;">
-                        <h2><?php esc_html_e('Settings', 'cardcrafter-data-grids'); ?></h2>
-                        <div style="margin-bottom: 15px;">
-                            <label for="cc-preview-url"
-                                style="font-weight: 600; display: block; margin-bottom: 5px;"><?php esc_html_e('Data Source URL', 'cardcrafter-data-grids'); ?></label>
-
-                            <div style="display: flex; gap: 5px; margin-bottom: 8px;">
-                                <input type="text" id="cc-preview-url" class="widefat"
-                                    placeholder="https://api.example.com/data.json" style="flex: 1;"
-                                    value="<?php echo isset($_GET['demo_url']) ? esc_attr($_GET['demo_url']) : ''; ?>">
+                <!-- Main Two-Column Layout -->
+                <div class="cc-main-layout">
+                    <!-- Left Column: Quick Start + Preview -->
+                    <div class="cc-left-column">
+                        <section class="cc-demo">
+                            <h2>🚀 Quick Start Demos</h2>
+                            <p>Click any dataset below to instantly load a live preview</p>
+                            
+                            <div class="cc-demo-grid">
+                                <a href="#" data-url="<?php echo esc_url($team_url); ?>" class="cc-demo-card">
+                                    <div class="cc-demo-icon">👥</div>
+                                    <div class="cc-demo-content">
+                                        <h3>Team Directory</h3>
+                                        <p>Professional team member profiles with photos, roles, and contact information</p>
+                                    </div>
+                                </a>
+                                <a href="#" data-url="<?php echo esc_url($products_url); ?>" class="cc-demo-card">
+                                    <div class="cc-demo-icon">🛍️</div>
+                                    <div class="cc-demo-content">
+                                        <h3>Product Showcase</h3>
+                                        <p>E-commerce product display with images, prices, and descriptions</p>
+                                    </div>
+                                </a>
+                                <a href="#" data-url="<?php echo esc_url($portfolio_url); ?>" class="cc-demo-card">
+                                    <div class="cc-demo-icon">🎨</div>
+                                    <div class="cc-demo-content">
+                                        <h3>Portfolio Gallery</h3>
+                                        <p>Creative portfolio showcase with project images and details</p>
+                                    </div>
+                                </a>
                             </div>
-
-                            <div style="display: flex; gap: 5px;">
-                                <button id="cc-upload-json-btn" class="button button-secondary" type="button" style="flex: 1;">
-                                    <span class="dashicons dashicons-upload"
-                                        style="margin-right: 4px; vertical-align: middle;"></span>
-                                    <?php esc_html_e('Upload JSON File', 'cardcrafter-data-grids'); ?>
-                                </button>
-                                <button id="cc-wp-posts-btn" class="button button-secondary" type="button" style="flex: 1;"
-                                    title="<?php esc_attr_e('Use WordPress posts as cards', 'cardcrafter-data-grids'); ?>">
-                                    <span class="dashicons dashicons-wordpress"
-                                        style="margin-right: 4px; vertical-align: middle;"></span>
-                                    <?php esc_html_e('WP Posts', 'cardcrafter-data-grids'); ?>
-                                </button>
-                            </div>
-
-                            <p class="description" style="margin-top: 5px;">
-                                <?php esc_html_e('Enter a remote URL, upload a JSON file, or use WordPress posts.', 'cardcrafter-data-grids'); ?>
-                            </p>
-                        </div>
-
-                        <div style="margin-bottom: 15px;">
-                            <label for="cc-layout"
-                                style="font-weight: 600; display: block; margin-bottom: 5px;"><?php esc_html_e('Layout Style', 'cardcrafter-data-grids'); ?></label>
-                            <select id="cc-layout" class="widefat">
-                                <option value="grid"><?php esc_html_e('Grid Layout', 'cardcrafter-data-grids'); ?></option>
-                                <option value="masonry"><?php esc_html_e('Masonry Layout', 'cardcrafter-data-grids'); ?></option>
-                                <option value="list"><?php esc_html_e('List Layout', 'cardcrafter-data-grids'); ?></option>
-                            </select>
-                        </div>
-
-                        <div style="margin-bottom: 15px; display: flex; gap: 20px;">
-                            <div style="flex: 1;">
-                                <label for="cc-columns"
-                                    style="font-weight: 600; display: block; margin-bottom: 5px;"><?php esc_html_e('Columns', 'cardcrafter-data-grids'); ?></label>
-                                <select id="cc-columns" class="widefat">
-                                    <option value="2">2 Columns</option>
-                                    <option value="3" selected>3 Columns</option>
-                                    <option value="4">4 Columns</option>
-                                    <option value="5">5 Columns</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 15px;">
-                            <label style="font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                <input type="checkbox" id="cc-enable-search" checked>
-                                <?php esc_html_e('Enable Search', 'cardcrafter-data-grids'); ?>
-                            </label>
-                        </div>
-
-                        <div style="display: flex; gap: 10px; margin-top: 15px;">
-                            <button id="cc-preview-btn" class="button button-primary button-large"
-                                style="flex: 1;"><?php esc_html_e('Preview Cards', 'cardcrafter-data-grids'); ?></button>
-                        </div>
-                    </div>
-
-                    <div class="card" style="margin: 0; max-width: none;">
-                        <h2><?php esc_html_e('Usage', 'cardcrafter-data-grids'); ?></h2>
-                        <p><?php esc_html_e('Copy the shortcode below to use this card layout:', 'cardcrafter-data-grids'); ?></p>
-                        <code id="cc-shortcode-display"
-                            style="display: block; padding: 10px; background: #f0f0f1; margin: 10px 0; word-break: break-all;">[cardcrafter source="..."]</code>
-                        <button id="cc-copy-shortcode" class="button button-secondary"
-                            style="width: 100%;"><?php esc_html_e('Copy Shortcode', 'cardcrafter-data-grids'); ?></button>
-                    </div>
-                </div>
-
-                <div class="cc-preview-area" style="flex: 1; min-width: 600px; max-width: none;">
-                    <div class="card"
-                        style="margin: 0; max-width: none; min-height: 500px; display: flex; flex-direction: column;">
-                        <h2 style="border-bottom: 1px solid #f0f0f1; padding-bottom: 15px; margin-bottom: 15px; margin-top: 0; display: flex; align-items: center; justify-content: space-between;">
-                            <span><?php esc_html_e('Live Preview', 'cardcrafter-data-grids'); ?></span>
-                            <small style="font-weight: normal; color: #666; font-size: 13px;">Try search, layouts & interact with cards</small>
-                        </h2>
-
-                        <div id="cc-preview-wrap" style="flex: 1; overflow: auto; background: #fff;">
-                            <div id="cc-preview-container"
-                                style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; min-height: 400px;">
-                                <div style="text-align: center;">
-                                    <span class="dashicons dashicons-grid-view"
-                                        style="font-size: 48px; width: 48px; height: 48px; color: #ddd;"></span>
-                                    <p style="margin: 16px 0 8px; font-size: 16px; color: #333;">
+                            
+                            <!-- Preview Area -->
+                            <div id="cc-preview-container" class="cc-preview">
+                                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6b7280; min-height: 400px; flex-direction: column;">
+                                    <span class="dashicons dashicons-grid-view" style="font-size: 48px; width: 48px; height: 48px; color: #d1d5db; margin-bottom: 16px;"></span>
+                                    <p style="margin: 0 0 8px; font-size: 16px; color: #374151;">
                                         <?php esc_html_e('Ready to generate your cards!', 'cardcrafter-data-grids'); ?>
                                     </p>
-                                    <p style="margin: 0; font-size: 14px; color: #666;">
-                                        <?php esc_html_e('👈 Click a Quick Start Demo or enter your own URL', 'cardcrafter-data-grids'); ?>
+                                    <p style="margin: 0; font-size: 14px; color: #6b7280;">
+                                        <?php esc_html_e('👆 Click a Quick Start Demo above or configure settings →', 'cardcrafter-data-grids'); ?>
                                     </p>
                                 </div>
                             </div>
-                        </div>
+                        </section>
+                    </div>
+
+                    <!-- Right Column: Configuration -->
+                    <div class="cc-right-column">
+                        <section class="cc-demo">
+                            <h2>⚙️ Configuration</h2>
+                            <p>Configure your data source and layout settings</p>
+                            
+                            <!-- Controls -->
+                            <div class="cc-controls-vertical">
+                                <div class="cc-control">
+                                    <label for="cc-preview-url"><?php esc_html_e('Data Source URL', 'cardcrafter-data-grids'); ?></label>
+                                    <input type="text" id="cc-preview-url" 
+                                           placeholder="https://api.example.com/data.json"
+                                           value="<?php echo isset($_GET['demo_url']) ? esc_attr($_GET['demo_url']) : ''; ?>">
+                                    <p class="description"><?php esc_html_e('Enter a remote URL, upload a JSON file, or use WordPress posts.', 'cardcrafter-data-grids'); ?></p>
+                                </div>
+                                
+                                <div class="cc-control">
+                                    <label for="cc-layout"><?php esc_html_e('Layout Style', 'cardcrafter-data-grids'); ?></label>
+                                    <select id="cc-layout">
+                                        <option value="grid"><?php esc_html_e('Grid Layout', 'cardcrafter-data-grids'); ?></option>
+                                        <option value="masonry"><?php esc_html_e('Masonry Layout', 'cardcrafter-data-grids'); ?></option>
+                                        <option value="list"><?php esc_html_e('List Layout', 'cardcrafter-data-grids'); ?></option>
+                                    </select>
+                                </div>
+                                
+                                <div class="cc-control">
+                                    <label for="cc-columns"><?php esc_html_e('Columns', 'cardcrafter-data-grids'); ?></label>
+                                    <select id="cc-columns">
+                                        <option value="2">2 Columns</option>
+                                        <option value="3" selected>3 Columns</option>
+                                        <option value="4">4 Columns</option>
+                                        <option value="5">5 Columns</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Display Options Separator -->
+                                <div style="border-top: 1px solid #e5e7eb; margin: 24px 0 20px 0; padding-top: 20px;">
+                                    <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #374151;">Display Options</h4>
+                                </div>
+                                
+                                <div class="cc-control">
+                                    <label>
+                                        <input type="checkbox" id="cc-enable-search" checked> <?php esc_html_e('Enable Search Box', 'cardcrafter-data-grids'); ?>
+                                        <span class="cc-help-icon" data-tooltip="Show a search input that allows users to search through the cards by title, description, or other content.">?</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="cc-control">
+                                    <label>
+                                        <input type="checkbox" id="cc-enable-filters" checked> <?php esc_html_e('Enable Sorting Filters', 'cardcrafter-data-grids'); ?>
+                                        <span class="cc-help-icon" data-tooltip="Show sorting dropdown options like A-Z, Z-A to help users organize the displayed cards.">?</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="cc-control">
+                                    <label>
+                                        <input type="checkbox" id="cc-show-description" checked> <?php esc_html_e('Show Description', 'cardcrafter-data-grids'); ?>
+                                        <span class="cc-help-icon" data-tooltip="Display the description text under each card's title and subtitle.">?</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="cc-control">
+                                    <label>
+                                        <input type="checkbox" id="cc-show-buttons" checked> <?php esc_html_e('Show CTAs', 'cardcrafter-data-grids'); ?>
+                                        <span class="cc-help-icon" data-tooltip="CTA stands for Call-to-Action. These are buttons like 'Learn More', 'View Details', or 'Read More' that encourage users to click and take action.">?</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="cc-control">
+                                    <label>
+                                        <input type="checkbox" id="cc-enable-export" checked> <?php esc_html_e('Enable Export', 'cardcrafter-data-grids'); ?>
+                                        <span class="cc-help-icon" data-tooltip="Allow users to export the displayed data in various formats like CSV, JSON, or PDF.">?</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="cc-control">
+                                    <label>
+                                        <input type="checkbox" id="cc-show-image" checked> <?php esc_html_e('Show Images', 'cardcrafter-data-grids'); ?>
+                                        <span class="cc-help-icon" data-tooltip="Display images in each card. If disabled, cards will be text-only.">?</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="cc-control">
+                                    <label for="cc-card-style">
+                                        <?php esc_html_e('Card Style', 'cardcrafter-data-grids'); ?>
+                                        <span class="cc-help-icon" data-tooltip="Choose the visual appearance of your cards: Default (clean), Minimal (simple), Bordered (outlined), or Shadow (elevated).">?</span>
+                                    </label>
+                                    <select id="cc-card-style">
+                                        <option value="default"><?php esc_html_e('Default', 'cardcrafter-data-grids'); ?></option>
+                                        <option value="minimal"><?php esc_html_e('Minimal', 'cardcrafter-data-grids'); ?></option>
+                                        <option value="bordered"><?php esc_html_e('Bordered', 'cardcrafter-data-grids'); ?></option>
+                                        <option value="shadow"><?php esc_html_e('Shadow', 'cardcrafter-data-grids'); ?></option>
+                                    </select>
+                                </div>
+                                
+                                <div class="cc-control">
+                                    <label>
+                                        <input type="checkbox" id="cc-enable-pagination" checked> <?php esc_html_e('Enable Pagination', 'cardcrafter-data-grids'); ?>
+                                        <span class="cc-help-icon" data-tooltip="Split cards across multiple pages with navigation controls. Disable to show all cards at once.">?</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="cc-control">
+                                    <label for="cc-items-per-page">
+                                        <?php esc_html_e('Items Per Page', 'cardcrafter-data-grids'); ?>
+                                        <span class="cc-help-icon" data-tooltip="How many cards to show on each page when pagination is enabled.">?</span>
+                                    </label>
+                                    <select id="cc-items-per-page">
+                                        <option value="6" selected>6</option>
+                                        <option value="9">9</option>
+                                        <option value="12">12</option>
+                                        <option value="18">18</option>
+                                        <option value="24">24</option>
+                                        <option value="-1"><?php esc_html_e('Show All', 'cardcrafter-data-grids'); ?></option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+                                <button id="cc-preview-btn" class="button button-primary button-large"><?php esc_html_e('Preview Cards', 'cardcrafter-data-grids'); ?></button>
+                                <button id="cc-upload-json-btn" class="button button-secondary">
+                                    <span class="dashicons dashicons-upload" style="margin-right: 4px; vertical-align: middle;"></span>
+                                    <?php esc_html_e('Upload JSON File', 'cardcrafter-data-grids'); ?>
+                                </button>
+                                <button id="cc-wp-posts-btn" class="button button-secondary">
+                                    <span class="dashicons dashicons-wordpress" style="margin-right: 4px; vertical-align: middle;"></span>
+                                    <?php esc_html_e('Use WP Posts', 'cardcrafter-data-grids'); ?>
+                                </button>
+                            </div>
+                            
+                            <!-- Generated Shortcode -->
+                            <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-top: 24px;">
+                                <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #111827;">📋 Generated Shortcode</h3>
+                                <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 14px;">Copy this shortcode to use anywhere in WordPress</p>
+                                <code id="cc-shortcode-display" class="cc-shortcode-display">[cardcrafter source="URL" layout="grid" columns="3"]</code>
+                                <button id="cc-copy-shortcode" class="button button-secondary" style="width: 100%; margin-top: 12px;">
+                                    <?php esc_html_e('Copy Shortcode', 'cardcrafter-data-grids'); ?>
+                                </button>
+                            </div>
+                        </section>
                     </div>
                 </div>
+
+                <!-- Documentation Section -->
+                <section class="cc-demo">
+                    <h2>📚 Documentation</h2>
+                    <p>Learn more about CardCrafter's features and capabilities</p>
+                    
+                    <div class="cc-features">
+                        <div class="cc-card">
+                            <div class="cc-icon">🎨</div>
+                            <h3>Multiple Layouts</h3>
+                            <p>Grid, masonry, and list layouts. All responsive and customizable.</p>
+                        </div>
+                        <div class="cc-card">
+                            <div class="cc-icon">📊</div>
+                            <h3>Any Data Source</h3>
+                            <p>JSON APIs, WordPress posts, WooCommerce products, or CSV files.</p>
+                        </div>
+                        <div class="cc-card">
+                            <div class="cc-icon">🔍</div>
+                            <h3>Live Search</h3>
+                            <p>Real-time search and filtering built-in.</p>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 24px;">
+                        <p style="color: #6b7280; margin-bottom: 12px;">
+                            Visit our <a href="https://github.com/isupersk/cardcrafter-data-grids" target="_blank" style="color: #0073aa;">GitHub repository</a> for comprehensive examples and documentation.
+                        </p>
+                    </div>
+                </section>
             </div>
         </div>
         <?php
@@ -823,18 +1221,6 @@ class CardCrafter
         // Load license manager
         require_once CARDCRAFTER_PATH . 'includes/class-cardcrafter-license-manager.php';
         CardCrafter_License_Manager::get_instance();
-    }
-
-    /**
-     * Render the welcome page.
-     */
-    public function render_welcome_page()
-    {
-        // Enqueue assets for the welcome page
-        wp_enqueue_script('cardcrafter-lib');
-        wp_enqueue_style('cardcrafter-style');
-        
-        include CARDCRAFTER_PATH . 'views/welcome.php';
     }
 
     /**
