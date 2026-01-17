@@ -35,7 +35,7 @@
    Demo Banner
    ========================================================================== */
 .cardcrafter-demo-banner {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #0073aa;
     color: white;
     padding: 12px 20px;
     border-radius: var(--cardcrafter-card-radius);
@@ -627,7 +627,7 @@
     }
     
     .cardcrafter-export-button {
-        background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+        background: #0073aa;
     }
     
     .cardcrafter-export-dropdown {

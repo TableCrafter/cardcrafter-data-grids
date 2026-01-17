@@ -77,8 +77,8 @@ class CardCrafter_License_Manager
     private function init()
     {
         // Hook into WordPress
-        add_action('admin_menu', [$this, 'add_license_menu']);
-        add_action('admin_notices', [$this, 'show_upgrade_notices']);
+        // add_action('admin_menu', [$this, 'add_license_menu']); // Disabled for now
+        // add_action('admin_notices', [$this, 'show_upgrade_notices']); // Disabled for now
         add_action('wp_ajax_cardcrafter_check_license', [$this, 'ajax_check_license']);
         add_action('wp_ajax_cardcrafter_activate_license', [$this, 'ajax_activate_license']);
         

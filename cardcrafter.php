@@ -149,96 +149,131 @@ class CardCrafter
             <p><?php esc_html_e('Transform JSON data into beautiful card layouts.', 'cardcrafter-data-grids'); ?></p>
             <hr class="wp-header-end">
 
-            <div class="cardcrafter-admin-layout" style="display: flex; gap: 20px; margin-top: 20px; align-items: flex-start;">
+            <div class="cc-admin-layout" style="display: flex; gap: 20px; margin-top: 20px; align-items: flex-start;">
 
-                <!-- Sidebar Controls -->
-                <div class="cardcrafter-sidebar" style="flex: 0 0 350px;">
-                    <!-- Configuration Card -->
+                <div class="cc-sidebar" style="flex: 0 0 380px;">
+                    <div class="card">
+                        <h2 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 20px;">🚀</span>
+                            <?php esc_html_e('Quick Start Demos', 'cardcrafter-data-grids'); ?>
+                        </h2>
+                        <p style="margin-bottom: 15px;">
+                            <?php esc_html_e('Click any dataset below to instantly load a demo card layout:', 'cardcrafter-data-grids'); ?>
+                        </p>
+                        <ul class="cc-demo-links" style="margin: 0;">
+                            <li style="margin-bottom: 8px;"><a href="#" class="button button-large" style="width: 100%; text-align: left; background: white; border: 1px solid #c3c4c7; color: #1d2327; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='#0073aa'; this.style.color='white'" onmouseout="this.style.background='white'; this.style.color='#1d2327'"
+                                    data-url="<?php echo esc_url($team_url); ?>">👥
+                                    <?php esc_html_e('Team Directory Cards', 'cardcrafter-data-grids'); ?></a></li>
+                            <li style="margin-bottom: 8px;"><a href="#" class="button button-large" style="width: 100%; text-align: left; background: white; border: 1px solid #c3c4c7; color: #1d2327; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='#0073aa'; this.style.color='white'" onmouseout="this.style.background='white'; this.style.color='#1d2327'"
+                                    data-url="<?php echo esc_url($products_url); ?>">🛍️
+                                    <?php esc_html_e('Product Showcase Cards', 'cardcrafter-data-grids'); ?></a></li>
+                            <li style="margin-bottom: 0;"><a href="#" class="button button-large" style="width: 100%; text-align: left; background: white; border: 1px solid #c3c4c7; color: #1d2327; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='#0073aa'; this.style.color='white'" onmouseout="this.style.background='white'; this.style.color='#1d2327'"
+                                    data-url="<?php echo esc_url($portfolio_url); ?>">🎨
+                                    <?php esc_html_e('Portfolio Gallery Cards', 'cardcrafter-data-grids'); ?></a></li>
+                        </ul>
+                        <div style="margin-top: 12px; padding: 8px 12px; background: #f0f6fc; border-radius: 3px; border: 1px solid #c3c4c7;">
+                            <p style="margin: 0; font-size: 12px; color: #646970; text-align: center;">
+                                ↑ <strong>Instant Demo:</strong> No setup required! Each dataset shows different card layouts.
+                            </p>
+                        </div>
+                    </div>
+
                     <div class="card" style="margin: 0 0 20px 0; max-width: none;">
                         <h2><?php esc_html_e('Settings', 'cardcrafter-data-grids'); ?></h2>
                         <div style="margin-bottom: 15px;">
-                            <label for="cardcrafter-preview-url"
+                            <label for="cc-preview-url"
                                 style="font-weight: 600; display: block; margin-bottom: 5px;"><?php esc_html_e('Data Source URL', 'cardcrafter-data-grids'); ?></label>
-                            <input type="text" id="cardcrafter-preview-url" class="widefat"
-                                placeholder="https://api.example.com/data.json">
-                            <p class="description">
-                                <?php esc_html_e('Must be a publicly accessible JSON endpoint.', 'cardcrafter-data-grids'); ?>
+
+                            <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+                                <input type="text" id="cc-preview-url" class="widefat"
+                                    placeholder="https://api.example.com/data.json" style="flex: 1;"
+                                    value="<?php echo isset($_GET['demo_url']) ? esc_attr($_GET['demo_url']) : ''; ?>">
+                            </div>
+
+                            <div style="display: flex; gap: 5px;">
+                                <button id="cc-upload-json-btn" class="button button-secondary" type="button" style="flex: 1;">
+                                    <span class="dashicons dashicons-upload"
+                                        style="margin-right: 4px; vertical-align: middle;"></span>
+                                    <?php esc_html_e('Upload JSON File', 'cardcrafter-data-grids'); ?>
+                                </button>
+                                <button id="cc-wp-posts-btn" class="button button-secondary" type="button" style="flex: 1;"
+                                    title="<?php esc_attr_e('Use WordPress posts as cards', 'cardcrafter-data-grids'); ?>">
+                                    <span class="dashicons dashicons-wordpress"
+                                        style="margin-right: 4px; vertical-align: middle;"></span>
+                                    <?php esc_html_e('WP Posts', 'cardcrafter-data-grids'); ?>
+                                </button>
+                            </div>
+
+                            <p class="description" style="margin-top: 5px;">
+                                <?php esc_html_e('Enter a remote URL, upload a JSON file, or use WordPress posts.', 'cardcrafter-data-grids'); ?>
                             </p>
                         </div>
 
                         <div style="margin-bottom: 15px;">
-                            <label for="cardcrafter-layout"
+                            <label for="cc-layout"
                                 style="font-weight: 600; display: block; margin-bottom: 5px;"><?php esc_html_e('Layout Style', 'cardcrafter-data-grids'); ?></label>
-                            <select id="cardcrafter-layout" class="widefat">
-                                <option value="grid"><?php esc_html_e('Grid (Default)', 'cardcrafter-data-grids'); ?></option>
-                                <option value="masonry"><?php esc_html_e('Masonry', 'cardcrafter-data-grids'); ?></option>
-                                <option value="list"><?php esc_html_e('List View', 'cardcrafter-data-grids'); ?></option>
+                            <select id="cc-layout" class="widefat">
+                                <option value="grid"><?php esc_html_e('Grid Layout', 'cardcrafter-data-grids'); ?></option>
+                                <option value="masonry"><?php esc_html_e('Masonry Layout', 'cardcrafter-data-grids'); ?></option>
+                                <option value="list"><?php esc_html_e('List Layout', 'cardcrafter-data-grids'); ?></option>
                             </select>
                         </div>
 
-                        <div style="margin-bottom: 15px;">
-                            <label for="cardcrafter-columns"
-                                style="font-weight: 600; display: block; margin-bottom: 5px;"><?php esc_html_e('Columns', 'cardcrafter-data-grids'); ?></label>
-                            <select id="cardcrafter-columns" class="widefat">
-                                <option value="2">2</option>
-                                <option value="3" selected>3</option>
-                                <option value="4">4</option>
-                            </select>
+                        <div style="margin-bottom: 15px; display: flex; gap: 20px;">
+                            <div style="flex: 1;">
+                                <label for="cc-columns"
+                                    style="font-weight: 600; display: block; margin-bottom: 5px;"><?php esc_html_e('Columns', 'cardcrafter-data-grids'); ?></label>
+                                <select id="cc-columns" class="widefat">
+                                    <option value="2">2 Columns</option>
+                                    <option value="3" selected>3 Columns</option>
+                                    <option value="4">4 Columns</option>
+                                    <option value="5">5 Columns</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 15px;">
+                            <label style="font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="cc-enable-search" checked>
+                                <?php esc_html_e('Enable Search', 'cardcrafter-data-grids'); ?>
+                            </label>
                         </div>
 
                         <div style="display: flex; gap: 10px; margin-top: 15px;">
-                            <button id="cardcrafter-preview-btn" class="button button-primary button-large"
+                            <button id="cc-preview-btn" class="button button-primary button-large"
                                 style="flex: 1;"><?php esc_html_e('Preview Cards', 'cardcrafter-data-grids'); ?></button>
                         </div>
                     </div>
 
-                    <!-- Usage info -->
-                    <div class="card" style="margin: 0 0 20px 0; max-width: none;">
-                        <h2><?php esc_html_e('Usage', 'cardcrafter-data-grids'); ?></h2>
-                        <p><?php esc_html_e('Copy the shortcode below to use these cards:', 'cardcrafter-data-grids'); ?></p>
-                        <code id="cardcrafter-shortcode-display"
-                            style="display: block; padding: 10px; background: #f0f0f1; margin: 10px 0; font-size: 12px; word-break: break-all;">[cardcrafter-data-grids source="..."]</code>
-                        <button id="cardcrafter-copy-shortcode" class="button button-secondary"
-                            style="width: 100%;"><?php esc_html_e('Copy Shortcode', 'cardcrafter-data-grids'); ?></button>
-                    </div>
-
-                    <!-- Demos -->
                     <div class="card" style="margin: 0; max-width: none;">
-                        <h2><?php esc_html_e('Quick Demos', 'cardcrafter-data-grids'); ?></h2>
-                        <p><?php esc_html_e('Click a dataset to load:', 'cardcrafter-data-grids'); ?></p>
-                        <ul class="cardcrafter-demo-links" style="margin: 0;">
-                            <li style="margin-bottom: 8px;"><a href="#" class="button" style="width: 100%; text-align: left;"
-                                    data-url="<?php echo esc_url($team_url); ?>">👥
-                                    <?php esc_html_e('Team Directory', 'cardcrafter-data-grids'); ?></a></li>
-                            <li style="margin-bottom: 8px;"><a href="#" class="button" style="width: 100%; text-align: left;"
-                                    data-url="<?php echo esc_url($products_url); ?>">🛍️
-                                    <?php esc_html_e('Product Showcase', 'cardcrafter-data-grids'); ?></a></li>
-                            <li style="margin-bottom: 8px;"><a href="#" class="button" style="width: 100%; text-align: left;"
-                                    data-url="<?php echo esc_url($portfolio_url); ?>">🎨
-                                    <?php esc_html_e('Portfolio Gallery', 'cardcrafter-data-grids'); ?></a></li>
-                            <li style="margin-bottom: 0;"><a href="#" class="button" style="width: 100%; text-align: left;"
-                                    data-url="<?php echo esc_url(CARDCRAFTER_URL . 'demo-data/acf-examples.json'); ?>">📝
-                                    <?php esc_html_e('WordPress + ACF Examples', 'cardcrafter-data-grids'); ?></a></li>
-                        </ul>
+                        <h2><?php esc_html_e('Usage', 'cardcrafter-data-grids'); ?></h2>
+                        <p><?php esc_html_e('Copy the shortcode below to use this card layout:', 'cardcrafter-data-grids'); ?></p>
+                        <code id="cc-shortcode-display"
+                            style="display: block; padding: 10px; background: #f0f0f1; margin: 10px 0; word-break: break-all;">[cardcrafter source="..."]</code>
+                        <button id="cc-copy-shortcode" class="button button-secondary"
+                            style="width: 100%;"><?php esc_html_e('Copy Shortcode', 'cardcrafter-data-grids'); ?></button>
                     </div>
                 </div>
 
-                <!-- Main Preview Area -->
-                <div class="cardcrafter-preview-area" style="flex: 1; min-width: 0;">
+                <div class="cc-preview-area" style="flex: 1; min-width: 600px; max-width: none;">
                     <div class="card"
                         style="margin: 0; max-width: none; min-height: 500px; display: flex; flex-direction: column;">
-                        <h2 style="border-bottom: 1px solid #f0f0f1; padding-bottom: 15px; margin-bottom: 15px; margin-top: 0;">
-                            <?php esc_html_e('Live Preview', 'cardcrafter-data-grids'); ?>
+                        <h2 style="border-bottom: 1px solid #f0f0f1; padding-bottom: 15px; margin-bottom: 15px; margin-top: 0; display: flex; align-items: center; justify-content: space-between;">
+                            <span><?php esc_html_e('Live Preview', 'cardcrafter-data-grids'); ?></span>
+                            <small style="font-weight: normal; color: #666; font-size: 13px;">Try search, layouts & interact with cards</small>
                         </h2>
 
-                        <div id="cardcrafter-preview-wrap"
-                            style="flex: 1; overflow: auto; background: #f9f9f9; padding: 20px; border-radius: 4px;">
-                            <div id="cardcrafter-preview-container"
-                                style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">
+                        <div id="cc-preview-wrap" style="flex: 1; overflow: auto; background: #fff;">
+                            <div id="cc-preview-container"
+                                style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; min-height: 400px;">
                                 <div style="text-align: center;">
                                     <span class="dashicons dashicons-grid-view"
                                         style="font-size: 48px; width: 48px; height: 48px; color: #ddd;"></span>
-                                    <p><?php esc_html_e('Select a demo or enter a URL to generate cards.', 'cardcrafter-data-grids'); ?>
+                                    <p style="margin: 16px 0 8px; font-size: 16px; color: #333;">
+                                        <?php esc_html_e('Ready to generate your cards!', 'cardcrafter-data-grids'); ?>
+                                    </p>
+                                    <p style="margin: 0; font-size: 14px; color: #666;">
+                                        <?php esc_html_e('👈 Click a Quick Start Demo or enter your own URL', 'cardcrafter-data-grids'); ?>
                                     </p>
                                 </div>
                             </div>
@@ -246,60 +281,8 @@ class CardCrafter
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- WordPress Integration Examples -->
-            <div class="card" style="margin-top: 20px;">
-                <h2>🚀 WordPress Native Integration Examples</h2>
-                <p>CardCrafter v1.6.0 introduces WordPress native data support. Use these shortcodes to display your WordPress content as cards:</p>
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-top: 20px;">
-                    <div style="padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
-                        <h3 style="margin: 0 0 10px 0; color: #1d2327;">📝 Basic WordPress Posts</h3>
-                        <code style="display: block; background: #f6f7f7; padding: 10px; border-radius: 3px; margin: 5px 0;">[cardcrafter-data-grids post_type="post"]</code>
-                        <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">Display blog posts with automatic featured images and excerpts.</p>
-                    </div>
-                    
-                    <div style="padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
-                        <h3 style="margin: 0 0 10px 0; color: #1d2327;">🛍️ WooCommerce Products</h3>
-                        <code style="display: block; background: #f6f7f7; padding: 10px; border-radius: 3px; margin: 5px 0;">[cardcrafter-data-grids post_type="product"]</code>
-                        <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">Show products with thumbnails and automatic pricing.</p>
-                    </div>
-                    
-                    <div style="padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
-                        <h3 style="margin: 0 0 10px 0; color: #1d2327;">📂 Category Filtering</h3>
-                        <code style="display: block; background: #f6f7f7; padding: 10px; border-radius: 3px; margin: 5px 0;">[cardcrafter-data-grids post_type="post" wp_query="category_name=news"]</code>
-                        <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">Display posts from specific categories.</p>
-                    </div>
-                    
-                    <div style="padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
-                        <h3 style="margin: 0 0 10px 0; color: #1d2327;">👤 Author Filtering</h3>
-                        <code style="display: block; background: #f6f7f7; padding: 10px; border-radius: 3px; margin: 5px 0;">[cardcrafter-data-grids post_type="post" wp_query="author=5"]</code>
-                        <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">Show posts from specific authors.</p>
-                    </div>
-                    
-                    <div style="padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
-                        <h3 style="margin: 0 0 10px 0; color: #1d2327;">⭐ Featured Content</h3>
-                        <code style="display: block; background: #f6f7f7; padding: 10px; border-radius: 3px; margin: 5px 0;">[cardcrafter-data-grids post_type="product" wp_query="meta_key=featured&meta_value=yes"]</code>
-                        <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">Filter by custom meta fields and values.</p>
-                    </div>
-                    
-                    <div style="padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
-                        <h3 style="margin: 0 0 10px 0; color: #1d2327;">🎯 ACF Integration</h3>
-                        <code style="display: block; background: #f6f7f7; padding: 10px; border-radius: 3px; margin: 5px 0;">[cardcrafter-data-grids post_type="team" subtitle_field="job_title"]</code>
-                        <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">Use ACF fields as card content automatically.</p>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 20px; padding: 15px; background: #e8f4fd; border: 1px solid #72aee6; border-radius: 4px;">
-                    <h4 style="margin: 0 0 10px 0; color: #1d2327;">💡 Pro Tips:</h4>
-                    <ul style="margin: 0;">
-                        <li><strong>ACF Support:</strong> All ACF fields are automatically available - just reference them by field name</li>
-                        <li><strong>Featured Images:</strong> WordPress post thumbnails are automatically used as card images</li>
-                        <li><strong>Permalinks:</strong> Card links automatically point to the WordPress post/page</li>
-                        <li><strong>Complex Queries:</strong> Use any WordPress query parameter in wp_query attribute</li>
-                    </ul>
-                </div>
-            </div>
         </div>
         <?php
     }
