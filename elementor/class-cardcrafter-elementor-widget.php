@@ -882,17 +882,28 @@ class CardCrafter_Elementor_Widget extends Widget_Base
         $posts = get_posts($args);
         $data = [];
 
+        // If no posts found, include demo data for better user experience
+        if (empty($posts)) {
+            return $this->get_demo_data();
+        }
+
         foreach ($posts as $post) {
             if ($settings['enable_dynamic_content'] === 'yes') {
                 $data[] = $this->process_post_with_dynamic_content($post, $settings);
             } else {
+                $featured_image = get_the_post_thumbnail_url($post->ID, 'medium');
+                // Fallback to full size if medium doesn't exist
+                if (!$featured_image) {
+                    $featured_image = get_the_post_thumbnail_url($post->ID, 'full');
+                }
+                
                 $data[] = [
                     'id' => $post->ID,
-                    'title' => $post->post_title,
-                    'subtitle' => get_the_date('F j, Y', $post),
-                    'description' => wp_trim_words($post->post_content, 20),
-                    'link' => get_permalink($post),
-                    'image' => get_the_post_thumbnail_url($post, 'medium'),
+                    'title' => get_the_title($post->ID),
+                    'subtitle' => get_the_date('F j, Y', $post->ID),
+                    'description' => wp_trim_words(get_the_excerpt($post->ID), 20, '...'),
+                    'link' => get_permalink($post->ID),
+                    'image' => $featured_image ?: $this->get_placeholder_image(get_the_title($post->ID)),
                     'post_type' => $post->post_type,
                     'author' => get_the_author_meta('display_name', $post->post_author),
                 ];
@@ -900,6 +911,18 @@ class CardCrafter_Elementor_Widget extends Widget_Base
         }
 
         return $data;
+    }
+
+    /**
+     * Generate placeholder image for posts without featured images
+     */
+    private function get_placeholder_image($title)
+    {
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">' .
+            '<rect fill="#0073aa" width="400" height="300"/>' .
+            '<text fill="white" font-family="sans-serif" font-size="24" text-anchor="middle" x="200" y="160">' .
+            esc_html(substr($title, 0, 20)) . '</text></svg>';
+        return 'data:image/svg+xml;base64,' . base64_encode($svg);
     }
 
     /**
