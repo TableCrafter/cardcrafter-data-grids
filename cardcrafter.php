@@ -3,7 +3,7 @@
  * Plugin Name: CardCrafter – Data-Driven Card Grids
  * Plugin URI: https://github.com/TableCrafter/cardcrafter-data-grids
  * Description: Transform JSON data and WordPress posts into beautiful card grids. Perfect for teams, products, portfolios, and blogs.
- * Version: 1.12.2
+ * Version: 1.13.0
  * Author: fahdi
  * Author URI: https://github.com/TableCrafter
  * License: GPLv2 or later
@@ -20,7 +20,7 @@ Note: Plugin name and slug updated to CardCrafter – Data-Driven Card Grids / c
 All functional code remains unchanged. These changes are recommended by an AI and do not replace WordPress.org volunteer review guidance.
 */
 
-define('CARDCRAFTER_VERSION', '1.12.2');
+define('CARDCRAFTER_VERSION', '1.13.0');
 define('CARDCRAFTER_URL', plugin_dir_url(__FILE__));
 define('CARDCRAFTER_PATH', plugin_dir_path(__FILE__));
 
@@ -880,17 +880,19 @@ class CardCrafter
         ob_start();
         ?>
         <div id="<?php echo esc_attr($atts['id']); ?>" class="cardcrafter-container"
+            role="region"
+            aria-label="<?php esc_attr_e('Card Grid', 'cardcrafter-data-grids'); ?>"
             data-config='<?php echo esc_attr(wp_json_encode($config)); ?>'>
             <?php if ($demo_mode): ?>
-                <div class="cardcrafter-demo-banner">
+                <div class="cardcrafter-demo-banner" role="status">
                     <div class="cardcrafter-demo-content">
-                        <span class="cardcrafter-demo-badge">🚀 Demo Mode</span>
-                        <p>This is sample team data. <strong><a href="#" class="cardcrafter-try-own-data">Try Your Own Data →</a></strong></p>
+                        <span class="cardcrafter-demo-badge"><?php esc_html_e('🚀 Demo Mode', 'cardcrafter-data-grids'); ?></span>
+                        <p><?php esc_html_e('This is sample team data.', 'cardcrafter-data-grids'); ?> <strong><a href="#" class="cardcrafter-try-own-data"><?php esc_html_e('Try Your Own Data →', 'cardcrafter-data-grids'); ?></a></strong></p>
                     </div>
                 </div>
             <?php endif; ?>
-            <div class="cardcrafter-loading">
-                <div class="cardcrafter-spinner"></div>
+            <div class="cardcrafter-loading" role="status" aria-live="polite">
+                <div class="cardcrafter-spinner" aria-hidden="true"></div>
                 <p><?php esc_html_e('Loading CardCrafter...', 'cardcrafter-data-grids'); ?></p>
             </div>
         </div>
@@ -900,6 +902,8 @@ class CardCrafter
                 var container = document.getElementById('<?php echo esc_js($atts['id']); ?>');
                 if (container) {
                     var config = JSON.parse(container.getAttribute('data-config'));
+                    config.selector = '#<?php echo esc_js($atts['id']); ?>';
+                    config.enableAccessibility = true;
                     new CardCrafter(config);
                 }
             } else {
@@ -1208,10 +1212,12 @@ class CardCrafter
                 'author' => get_the_author_meta('display_name', $post->post_author)
             );
 
-            // Add custom fields support
-            $custom_fields = get_fields($post->ID); // ACF support
-            if ($custom_fields) {
-                $card_item = array_merge($card_item, $custom_fields);
+            // Add custom fields support (ACF integration with fallback)
+            if (function_exists('get_fields')) {
+                $custom_fields = get_fields($post->ID);
+                if ($custom_fields && is_array($custom_fields)) {
+                    $card_item = array_merge($card_item, $custom_fields);
+                }
             }
 
             $card_data[] = $card_item;
@@ -1244,15 +1250,20 @@ class CardCrafter
         ob_start();
         ?>
         <div id="<?php echo esc_attr($atts['id']); ?>" class="cardcrafter-container"
+            role="region"
+            aria-label="<?php esc_attr_e('WordPress Posts Card Grid', 'cardcrafter-data-grids'); ?>"
             data-config='<?php echo esc_attr(wp_json_encode($config)); ?>'>
-            <div class="cardcrafter-wp-banner">
+            <div class="cardcrafter-wp-banner" role="status">
                 <div class="cardcrafter-wp-content">
-                    <span class="cardcrafter-wp-badge">📝 WordPress Data</span>
-                    <p>Showing <?php echo count($card_data); ?> <?php echo esc_html($atts['post_type']); ?>(s) from your site</p>
+                    <span class="cardcrafter-wp-badge"><?php esc_html_e('📝 WordPress Data', 'cardcrafter-data-grids'); ?></span>
+                    <p><?php
+                        /* translators: %1$d: number of items, %2$s: post type */
+                        printf(esc_html__('Showing %1$d %2$s(s) from your site', 'cardcrafter-data-grids'), count($card_data), esc_html($atts['post_type']));
+                    ?></p>
                 </div>
             </div>
-            <div class="cardcrafter-loading">
-                <div class="cardcrafter-spinner"></div>
+            <div class="cardcrafter-loading" role="status" aria-live="polite">
+                <div class="cardcrafter-spinner" aria-hidden="true"></div>
                 <p><?php esc_html_e('Loading WordPress content...', 'cardcrafter-data-grids'); ?></p>
             </div>
         </div>
@@ -1264,12 +1275,15 @@ class CardCrafter
                     var config = JSON.parse(container.getAttribute('data-config'));
                     new CardCrafter({
                         selector: '#<?php echo esc_js($atts['id']); ?>',
+                        source: 'wp_posts',
                         data: config.data,
                         layout: config.layout,
                         columns: config.columns,
                         itemsPerPage: config.itemsPerPage,
                         wpDataMode: config.wpDataMode,
-                        fields: config.fields
+                        fields: config.fields,
+                        enableAccessibility: true,
+                        ariaLabel: '<?php esc_attr_e('WordPress Posts', 'cardcrafter-data-grids'); ?>'
                     });
                 }
             } else {

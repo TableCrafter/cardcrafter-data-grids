@@ -1,9 +1,16 @@
 /**
  * CardCrafter - JSON to Card Layouts
  * A lightweight JavaScript library for rendering JSON data as beautiful card grids.
- * 
- * @version 1.0.0
+ *
+ * @version 1.13.0
  * @license GPLv2 or later
+ *
+ * WCAG 2.1 AA Accessibility Features:
+ * - Full keyboard navigation (Arrow keys, Home, End, Tab)
+ * - ARIA landmarks, roles, and live regions
+ * - Screen reader announcements for dynamic content
+ * - Focus management and visible focus indicators
+ * - Skip links for card grid navigation
  */
 
 (function (global) {
@@ -28,6 +35,10 @@
             enableExport: true,
             cardStyle: 'default',
             itemsPerPage: 6,
+            // Accessibility options
+            enableAccessibility: true,
+            ariaLabel: 'Card Grid',
+            announceChanges: true,
             fields: {
                 image: 'image',
                 title: 'title',
@@ -37,10 +48,7 @@
             }
         }, options);
 
-        // Debug: Log options to verify they're being passed correctly
-        console.log('CardCrafter options:', this.options);
-
-        if (!this.options.selector || !this.options.source) {
+        if (!this.options.selector && !this.options.source) {
             console.error('CardCrafter: selector and source are required');
             return;
         }
@@ -56,11 +64,16 @@
         this.gridWrapper = null; // Will hold the DOM element for the card grid
         this.searchTimeout = null; // Debounce timeout for search
         this.searchCache = {}; // Cache search results for better performance
-        
+
         // Pagination properties
         this.currentPage = 1;
         this.itemsPerPage = this.options.itemsPerPage || 12; // Default 12 items per page
         this.paginationWrapper = null; // Will hold pagination controls
+
+        // Accessibility properties
+        this.liveRegion = null; // ARIA live region for announcements
+        this.focusedCardIndex = -1; // Currently focused card index
+        this.uniqueId = 'cc-' + Math.random().toString(36).substr(2, 9); // Unique ID for ARIA relationships
 
         this.init();
     }
@@ -136,44 +149,223 @@
 
     /**
      * Render the main layout structure (Toolbar + Grid + Pagination)
+     * Implements WCAG 2.1 AA accessibility requirements
      */
     CardCrafter.prototype.renderLayout = function () {
         this.container.innerHTML = '';
-        
-        // render toolbar
+
+        // Add accessibility attributes to main container
+        this.container.setAttribute('role', 'region');
+        this.container.setAttribute('aria-label', this.options.ariaLabel || 'Card Grid');
+
+        // Create skip link for keyboard users
+        if (this.options.enableAccessibility !== false) {
+            this.renderSkipLink();
+        }
+
+        // Render toolbar
         this.renderToolbar();
 
-        // create grid wrapper
+        // Create grid wrapper with accessibility attributes
         this.gridWrapper = this.createEl('div', 'cardcrafter-grid-wrapper');
+        this.gridWrapper.setAttribute('id', this.uniqueId + '-grid');
         this.container.appendChild(this.gridWrapper);
 
-        // create pagination wrapper
+        // Create pagination wrapper
         this.paginationWrapper = this.createEl('div', 'cardcrafter-pagination-wrapper');
         this.container.appendChild(this.paginationWrapper);
 
-        // initial sort and render
+        // Create ARIA live region for announcements
+        if (this.options.enableAccessibility !== false) {
+            this.renderLiveRegion();
+        }
+
+        // Initial sort and render
         this.sortItems('default');
         this.renderPaginatedCards();
+
+        // Set up keyboard navigation
+        if (this.options.enableAccessibility !== false) {
+            this.setupKeyboardNavigation();
+        }
     };
 
     /**
-     * Render the Search and Sort Toolbar
+     * Render skip link for keyboard navigation (WCAG 2.4.1)
+     */
+    CardCrafter.prototype.renderSkipLink = function () {
+        var skipLink = this.createEl('a', 'cardcrafter-skip-link cardcrafter-sr-only cardcrafter-sr-focusable');
+        skipLink.href = '#' + this.uniqueId + '-grid';
+        skipLink.textContent = 'Skip to card grid';
+        skipLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            var grid = document.getElementById(this.getAttribute('href').slice(1));
+            if (grid) {
+                grid.focus();
+                grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+        this.container.insertBefore(skipLink, this.container.firstChild);
+    };
+
+    /**
+     * Render ARIA live region for dynamic announcements (WCAG 4.1.3)
+     */
+    CardCrafter.prototype.renderLiveRegion = function () {
+        this.liveRegion = this.createEl('div', 'cardcrafter-sr-only');
+        this.liveRegion.setAttribute('role', 'status');
+        this.liveRegion.setAttribute('aria-live', 'polite');
+        this.liveRegion.setAttribute('aria-atomic', 'true');
+        this.liveRegion.setAttribute('id', this.uniqueId + '-announcements');
+        this.container.appendChild(this.liveRegion);
+    };
+
+    /**
+     * Announce message to screen readers via ARIA live region
+     * @param {string} message - The message to announce
+     */
+    CardCrafter.prototype.announce = function (message) {
+        if (!this.liveRegion || this.options.announceChanges === false) return;
+
+        // Clear and set with small delay to ensure announcement
+        this.liveRegion.textContent = '';
+        var self = this;
+        setTimeout(function () {
+            self.liveRegion.textContent = message;
+        }, 100);
+    };
+
+    /**
+     * Set up keyboard navigation for card grid (WCAG 2.1.1)
+     */
+    CardCrafter.prototype.setupKeyboardNavigation = function () {
+        var self = this;
+
+        this.gridWrapper.setAttribute('tabindex', '0');
+        this.gridWrapper.setAttribute('role', 'list');
+        this.gridWrapper.setAttribute('aria-label', 'Card list - Use arrow keys to navigate');
+
+        this.gridWrapper.addEventListener('keydown', function (e) {
+            self.handleKeyboardNavigation(e);
+        });
+    };
+
+    /**
+     * Handle keyboard navigation within card grid
+     * @param {KeyboardEvent} e - Keyboard event
+     */
+    CardCrafter.prototype.handleKeyboardNavigation = function (e) {
+        var cards = this.gridWrapper.querySelectorAll('.cardcrafter-card');
+        if (!cards.length) return;
+
+        var columns = parseInt(this.options.columns) || 3;
+        var handled = false;
+
+        switch (e.key) {
+            case 'ArrowRight':
+                this.focusedCardIndex = Math.min(this.focusedCardIndex + 1, cards.length - 1);
+                handled = true;
+                break;
+            case 'ArrowLeft':
+                this.focusedCardIndex = Math.max(this.focusedCardIndex - 1, 0);
+                handled = true;
+                break;
+            case 'ArrowDown':
+                this.focusedCardIndex = Math.min(this.focusedCardIndex + columns, cards.length - 1);
+                handled = true;
+                break;
+            case 'ArrowUp':
+                this.focusedCardIndex = Math.max(this.focusedCardIndex - columns, 0);
+                handled = true;
+                break;
+            case 'Home':
+                this.focusedCardIndex = 0;
+                handled = true;
+                break;
+            case 'End':
+                this.focusedCardIndex = cards.length - 1;
+                handled = true;
+                break;
+            case 'Enter':
+            case ' ':
+                if (this.focusedCardIndex >= 0 && cards[this.focusedCardIndex]) {
+                    var link = cards[this.focusedCardIndex].querySelector('.cardcrafter-card-link');
+                    if (link) {
+                        link.click();
+                        handled = true;
+                    }
+                }
+                break;
+        }
+
+        if (handled) {
+            e.preventDefault();
+            this.focusCard(this.focusedCardIndex);
+        }
+    };
+
+    /**
+     * Focus a specific card by index
+     * @param {number} index - Card index to focus
+     */
+    CardCrafter.prototype.focusCard = function (index) {
+        var cards = this.gridWrapper.querySelectorAll('.cardcrafter-card');
+        if (!cards.length || index < 0 || index >= cards.length) return;
+
+        // Remove focus from all cards
+        cards.forEach(function (card) {
+            card.classList.remove('cardcrafter-card-focused');
+            card.setAttribute('tabindex', '-1');
+        });
+
+        // Focus the target card
+        var targetCard = cards[index];
+        targetCard.classList.add('cardcrafter-card-focused');
+        targetCard.setAttribute('tabindex', '0');
+        targetCard.focus();
+
+        // Announce card info to screen reader
+        var title = targetCard.querySelector('.cardcrafter-card-title');
+        if (title) {
+            this.announce('Card ' + (index + 1) + ' of ' + cards.length + ': ' + title.textContent);
+        }
+    };
+
+    /**
+     * Render the Search and Sort Toolbar (WCAG compliant)
      */
     CardCrafter.prototype.renderToolbar = function () {
         var self = this;
         var toolbar = this.createEl('div', 'cardcrafter-toolbar');
 
-        // Debug: Log search and filters options
-        console.log('Rendering toolbar - search:', this.options.search, 'filters:', this.options.filters);
+        // Add accessibility attributes to toolbar
+        toolbar.setAttribute('role', 'toolbar');
+        toolbar.setAttribute('aria-label', 'Card grid controls');
 
         // Search Input - only if search is enabled
         if (this.options.search !== false) {
-            console.log('Adding search input to toolbar');
             var searchWrapper = this.createEl('div', 'cardcrafter-search-wrapper');
+
+            // Create label for accessibility (visually hidden)
+            var searchLabel = this.createEl('label', 'cardcrafter-sr-only');
+            searchLabel.setAttribute('for', this.uniqueId + '-search');
+            searchLabel.textContent = 'Search cards';
+            searchWrapper.appendChild(searchLabel);
+
             var searchInput = this.createEl('input', 'cardcrafter-search-input', {
                 type: 'search',
-                placeholder: 'Search items...'
+                placeholder: 'Search items...',
+                id: this.uniqueId + '-search',
+                'aria-describedby': this.uniqueId + '-search-hint'
             });
+            searchInput.setAttribute('role', 'searchbox');
+            searchInput.setAttribute('aria-label', 'Search cards');
+
+            // Add search hint for screen readers
+            var searchHint = this.createEl('span', 'cardcrafter-sr-only');
+            searchHint.setAttribute('id', this.uniqueId + '-search-hint');
+            searchHint.textContent = 'Type to filter cards. Results update automatically.';
+            searchWrapper.appendChild(searchHint);
 
             searchInput.addEventListener('input', function (e) {
                 self.debouncedSearch(e.target.value);
@@ -186,15 +378,25 @@
         // Sort Dropdown - only if filters are enabled
         if (this.options.filters !== false) {
             var sortWrapper = this.createEl('div', 'cardcrafter-sort-wrapper');
-            var sortSelect = this.createEl('select', 'cardcrafter-sort-select');
-        
+
+            // Create label for accessibility
+            var sortLabel = this.createEl('label', 'cardcrafter-sr-only');
+            sortLabel.setAttribute('for', this.uniqueId + '-sort');
+            sortLabel.textContent = 'Sort cards by';
+            sortWrapper.appendChild(sortLabel);
+
+            var sortSelect = this.createEl('select', 'cardcrafter-sort-select', {
+                id: this.uniqueId + '-sort'
+            });
+            sortSelect.setAttribute('aria-label', 'Sort cards by');
+
             var options = [
                 { value: 'default', text: 'Default Order' },
                 { value: 'az', text: 'Name (A-Z)' },
                 { value: 'za', text: 'Name (Z-A)' }
             ];
 
-            options.forEach(function(opt) {
+            options.forEach(function (opt) {
                 var option = document.createElement('option');
                 option.value = opt.value;
                 option.textContent = opt.text;
@@ -204,6 +406,10 @@
             sortSelect.addEventListener('change', function (e) {
                 self.sortItems(e.target.value);
                 self.renderPaginatedCards();
+
+                // Announce sort change to screen readers
+                var selectedText = e.target.options[e.target.selectedIndex].text;
+                self.announce('Cards sorted: ' + selectedText);
             });
 
             sortWrapper.appendChild(sortSelect);
@@ -215,8 +421,13 @@
             var perPageWrapper = this.createEl('div', 'cardcrafter-per-page-wrapper');
             var perPageLabel = this.createEl('label', 'cardcrafter-per-page-label');
             perPageLabel.textContent = 'Items: ';
-            var perPageSelect = this.createEl('select', 'cardcrafter-per-page-select');
-            
+            perPageLabel.setAttribute('for', this.uniqueId + '-per-page');
+
+            var perPageSelect = this.createEl('select', 'cardcrafter-per-page-select', {
+                id: this.uniqueId + '-per-page'
+            });
+            perPageSelect.setAttribute('aria-label', 'Items per page');
+
             var perPageOptions = [
                 { value: '6', text: '6 per page' },
                 { value: '12', text: '12 per page' },
@@ -225,7 +436,7 @@
                 { value: '100', text: '100 per page' }
             ];
 
-            perPageOptions.forEach(function(opt) {
+            perPageOptions.forEach(function (opt) {
                 var option = document.createElement('option');
                 option.value = opt.value;
                 option.textContent = opt.text;
@@ -239,6 +450,9 @@
                 self.itemsPerPage = parseInt(e.target.value);
                 self.currentPage = 1; // Reset to first page
                 self.renderPaginatedCards();
+
+                // Announce change to screen readers
+                self.announce('Showing ' + e.target.value + ' items per page');
             });
 
             perPageWrapper.appendChild(perPageLabel);
@@ -246,45 +460,79 @@
             toolbar.appendChild(perPageWrapper);
         }
 
-        // Export Dropdown - only if export is enabled
+        // Export Dropdown - only if export is enabled (with full accessibility)
         if (this.options.enableExport !== false) {
             var exportWrapper = this.createEl('div', 'cardcrafter-export-wrapper');
             var exportButton = this.createEl('button', 'cardcrafter-export-button');
             exportButton.textContent = 'Export Data';
             exportButton.type = 'button';
-            
+            exportButton.setAttribute('aria-expanded', 'false');
+            exportButton.setAttribute('aria-haspopup', 'true');
+            exportButton.setAttribute('aria-controls', this.uniqueId + '-export-menu');
+
             var exportDropdown = this.createEl('div', 'cardcrafter-export-dropdown');
             exportDropdown.style.display = 'none';
-            
+            exportDropdown.setAttribute('id', this.uniqueId + '-export-menu');
+            exportDropdown.setAttribute('role', 'menu');
+            exportDropdown.setAttribute('aria-label', 'Export options');
+
             var exportOptions = [
                 { value: 'csv', text: 'Export as CSV', icon: '📊' },
                 { value: 'json', text: 'Export as JSON', icon: '📄' },
                 { value: 'pdf', text: 'Export as PDF', icon: '📋' }
             ];
 
-            exportOptions.forEach(function(opt) {
+            exportOptions.forEach(function (opt, index) {
                 var exportItem = self.createEl('button', 'cardcrafter-export-item');
                 exportItem.innerHTML = opt.icon + ' ' + opt.text;
-                exportItem.addEventListener('click', function(e) {
+                exportItem.setAttribute('role', 'menuitem');
+                exportItem.setAttribute('tabindex', index === 0 ? '0' : '-1');
+
+                exportItem.addEventListener('click', function (e) {
                     e.preventDefault();
                     e.stopPropagation();
                     self.exportData(opt.value);
-                    exportDropdown.style.display = 'none';
+                    self.closeExportDropdown(exportButton, exportDropdown);
+                    exportButton.focus();
                 });
+
+                exportItem.addEventListener('keydown', function (e) {
+                    self.handleExportMenuKeyboard(e, exportDropdown, exportButton);
+                });
+
                 exportDropdown.appendChild(exportItem);
             });
 
-            exportButton.addEventListener('click', function(e) {
+            exportButton.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
                 var isVisible = exportDropdown.style.display === 'block';
-                exportDropdown.style.display = isVisible ? 'none' : 'block';
+                if (isVisible) {
+                    self.closeExportDropdown(exportButton, exportDropdown);
+                } else {
+                    self.openExportDropdown(exportButton, exportDropdown);
+                }
+            });
+
+            exportButton.addEventListener('keydown', function (e) {
+                if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    self.openExportDropdown(exportButton, exportDropdown);
+                }
             });
 
             // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
+            document.addEventListener('click', function (e) {
                 if (!exportWrapper.contains(e.target)) {
-                    exportDropdown.style.display = 'none';
+                    self.closeExportDropdown(exportButton, exportDropdown);
+                }
+            });
+
+            // Close on Escape
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && exportDropdown.style.display === 'block') {
+                    self.closeExportDropdown(exportButton, exportDropdown);
+                    exportButton.focus();
                 }
             });
 
@@ -296,6 +544,65 @@
         // Only append toolbar if it has child elements
         if (toolbar.children.length > 0) {
             this.container.appendChild(toolbar);
+        }
+    };
+
+    /**
+     * Open export dropdown with accessibility support
+     */
+    CardCrafter.prototype.openExportDropdown = function (button, dropdown) {
+        dropdown.style.display = 'block';
+        button.setAttribute('aria-expanded', 'true');
+
+        // Focus first menu item
+        var firstItem = dropdown.querySelector('[role="menuitem"]');
+        if (firstItem) {
+            firstItem.focus();
+        }
+    };
+
+    /**
+     * Close export dropdown with accessibility support
+     */
+    CardCrafter.prototype.closeExportDropdown = function (button, dropdown) {
+        dropdown.style.display = 'none';
+        button.setAttribute('aria-expanded', 'false');
+    };
+
+    /**
+     * Handle keyboard navigation within export menu (WCAG 2.1.1)
+     */
+    CardCrafter.prototype.handleExportMenuKeyboard = function (e, dropdown, button) {
+        var items = dropdown.querySelectorAll('[role="menuitem"]');
+        var currentIndex = Array.from(items).indexOf(document.activeElement);
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                var nextIndex = (currentIndex + 1) % items.length;
+                items[nextIndex].focus();
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                var prevIndex = (currentIndex - 1 + items.length) % items.length;
+                items[prevIndex].focus();
+                break;
+            case 'Home':
+                e.preventDefault();
+                items[0].focus();
+                break;
+            case 'End':
+                e.preventDefault();
+                items[items.length - 1].focus();
+                break;
+            case 'Escape':
+                e.preventDefault();
+                this.closeExportDropdown(button, dropdown);
+                button.focus();
+                break;
+            case 'Tab':
+                this.closeExportDropdown(button, dropdown);
+                break;
         }
     };
 
@@ -339,25 +646,39 @@
                         var sub = (self.getNestedValue(item, self.options.fields.subtitle) || '').toLowerCase();
                         item._searchableText = title + ' ' + desc + ' ' + sub;
                     }
-                    
+
                     return item._searchableText.includes(q);
                 });
             }
-            
+
             // Cache the results (limit cache size to prevent memory bloat)
             if (Object.keys(this.searchCache).length > 50) {
                 this.searchCache = {}; // Reset cache when it gets too large
             }
             this.searchCache[q] = this.filteredItems.slice();
         }
-        
+
         // Re-apply current sort
-        var currentSort = this.container.querySelector('.cardcrafter-sort-select').value;
-        this.sortItems(currentSort);
+        var sortSelect = this.container.querySelector('.cardcrafter-sort-select');
+        if (sortSelect) {
+            this.sortItems(sortSelect.value);
+        }
 
         // Reset to first page when search changes
         this.currentPage = 1;
+        this.focusedCardIndex = -1; // Reset focus
         this.renderPaginatedCards();
+
+        // Announce search results to screen readers
+        if (q) {
+            var count = this.filteredItems.length;
+            var message = count === 0
+                ? 'No cards found matching "' + query + '"'
+                : count + ' card' + (count !== 1 ? 's' : '') + ' found matching "' + query + '"';
+            this.announce(message);
+        } else if (this.items.length > 0) {
+            this.announce('Showing all ' + this.items.length + ' cards');
+        }
     };
 
     /**
@@ -418,32 +739,42 @@
     };
 
     /**
-     * Render cards from data
+     * Render cards from data (with accessibility enhancements)
      */
     CardCrafter.prototype.renderCards = function (items) {
         var self = this;
-        
+
         if (!items.length) {
-            this.gridWrapper.innerHTML = '<div class="cardcrafter-no-results"><p>No items found matching your search.</p></div>';
+            var noResults = this.createEl('div', 'cardcrafter-no-results');
+            noResults.setAttribute('role', 'status');
+            noResults.innerHTML = '<p>No items found matching your search.</p>';
+            this.gridWrapper.innerHTML = '';
+            this.gridWrapper.appendChild(noResults);
             return;
         }
 
-        // Create grid container
+        // Create grid container with accessibility
         var grid = document.createElement('div');
         grid.className = 'cardcrafter-grid cardcrafter-layout-' + this.options.layout + ' cardcrafter-cols-' + this.options.columns;
+        grid.setAttribute('role', 'list');
+        grid.setAttribute('aria-label', 'Card list with ' + items.length + ' items');
 
         // Performance optimization: Use DocumentFragment for batch DOM operations
         var fragment = document.createDocumentFragment();
-        
-        // Generate cards
+
+        // Generate cards with proper indexing for accessibility
+        var startIndex = (this.currentPage - 1) * this.itemsPerPage;
         items.forEach(function (item, index) {
-            var card = self.createCard(item, index);
+            var card = self.createCard(item, startIndex + index);
             fragment.appendChild(card);
         });
-        
+
         grid.appendChild(fragment);
         this.gridWrapper.innerHTML = '';
         this.gridWrapper.appendChild(grid);
+
+        // Reset focus state for new content
+        this.focusedCardIndex = -1;
     };
 
     /**
@@ -476,73 +807,93 @@
     };
 
     /**
-     * Render pagination controls
+     * Render pagination controls (WCAG compliant)
      */
     CardCrafter.prototype.renderPaginationControls = function (totalPages, totalItems) {
         var self = this;
-        
+
         if (!this.paginationWrapper) return;
-        
+
         this.paginationWrapper.innerHTML = '';
-        
+
         // Don't show pagination if disabled or only one page or no items
         if (this.options.pagination === false || totalPages <= 1) return;
-        
-        var pagination = this.createEl('div', 'cardcrafter-pagination');
-        
-        // Results info
+
+        // Create navigation landmark for pagination
+        var pagination = this.createEl('nav', 'cardcrafter-pagination');
+        pagination.setAttribute('role', 'navigation');
+        pagination.setAttribute('aria-label', 'Card pagination');
+
+        // Results info with live region
         var startItem = ((this.currentPage - 1) * this.itemsPerPage) + 1;
         var endItem = Math.min(this.currentPage * this.itemsPerPage, totalItems);
         var resultsInfo = this.createEl('div', 'cardcrafter-pagination-info');
+        resultsInfo.setAttribute('aria-live', 'polite');
+        resultsInfo.setAttribute('aria-atomic', 'true');
         resultsInfo.textContent = 'Showing ' + startItem + '-' + endItem + ' of ' + totalItems + ' items';
         pagination.appendChild(resultsInfo);
-        
+
         // Pagination controls container
         var controls = this.createEl('div', 'cardcrafter-pagination-controls');
-        
-        // Previous button
+        controls.setAttribute('role', 'group');
+        controls.setAttribute('aria-label', 'Page navigation');
+
+        // Previous button with accessibility
         var prevBtn = this.createEl('button', 'cardcrafter-pagination-btn cardcrafter-pagination-prev');
         prevBtn.textContent = 'Previous';
+        prevBtn.setAttribute('aria-label', 'Go to previous page');
         prevBtn.disabled = this.currentPage === 1;
-        prevBtn.addEventListener('click', function() {
+        if (this.currentPage === 1) {
+            prevBtn.setAttribute('aria-disabled', 'true');
+        }
+        prevBtn.addEventListener('click', function () {
             if (self.currentPage > 1) {
                 self.currentPage--;
                 self.renderPaginatedCards();
+                self.announce('Page ' + self.currentPage + ' of ' + totalPages);
             }
         });
         controls.appendChild(prevBtn);
-        
+
         // Page numbers (show max 5 page numbers)
         var startPage = Math.max(1, this.currentPage - 2);
         var endPage = Math.min(totalPages, startPage + 4);
-        
+
         // Adjust start if we're near the end
         if (endPage - startPage < 4) {
             startPage = Math.max(1, endPage - 4);
         }
-        
+
         for (var i = startPage; i <= endPage; i++) {
             var pageBtn = this.createEl('button', 'cardcrafter-pagination-btn cardcrafter-pagination-number');
             pageBtn.textContent = i;
+            pageBtn.setAttribute('aria-label', 'Page ' + i + ' of ' + totalPages);
+
             if (i === this.currentPage) {
                 pageBtn.classList.add('cardcrafter-pagination-current');
+                pageBtn.setAttribute('aria-current', 'page');
             }
-            pageBtn.addEventListener('click', this.createPageClickHandler(i));
+            pageBtn.addEventListener('click', this.createPageClickHandler(i, totalPages));
             controls.appendChild(pageBtn);
         }
-        
-        // Next button
+
+        // Next button with accessibility
         var nextBtn = this.createEl('button', 'cardcrafter-pagination-btn cardcrafter-pagination-next');
         nextBtn.textContent = 'Next';
+        nextBtn.setAttribute('aria-label', 'Go to next page');
         nextBtn.disabled = this.currentPage === totalPages;
-        nextBtn.addEventListener('click', function() {
+        if (this.currentPage === totalPages) {
+            nextBtn.setAttribute('aria-disabled', 'true');
+        }
+        nextBtn.addEventListener('click', function () {
             if (self.currentPage < totalPages) {
                 self.currentPage++;
                 self.renderPaginatedCards();
+                self.announce('Page ' + self.currentPage + ' of ' + totalPages);
             }
         });
         controls.appendChild(nextBtn);
-        
+
         pagination.appendChild(controls);
         this.paginationWrapper.appendChild(pagination);
     };
@@ -550,16 +901,22 @@
     /**
      * Create page click handler (closure to capture page number)
      */
-    CardCrafter.prototype.createPageClickHandler = function(pageNumber) {
+    CardCrafter.prototype.createPageClickHandler = function (pageNumber, totalPages) {
         var self = this;
-        return function() {
+        return function () {
             self.currentPage = pageNumber;
+            self.focusedCardIndex = -1; // Reset focus
             self.renderPaginatedCards();
+
+            // Announce page change to screen readers
+            if (totalPages) {
+                self.announce('Page ' + pageNumber + ' of ' + totalPages);
+            }
         };
     };
 
     /**
-     * Create a single card element
+     * Create a single card element (WCAG compliant)
      */
     CardCrafter.prototype.createCard = function (item, index) {
         var self = this;
@@ -572,26 +929,34 @@
         var description = this.getNestedValue(item, fields.description);
         var link = this.getNestedValue(item, fields.link);
 
-        // Create card element
-        var card = document.createElement('div');
+        // Generate unique IDs for ARIA relationships
+        var cardId = this.uniqueId + '-card-' + index;
+        var titleId = cardId + '-title';
+        var descId = cardId + '-desc';
+
+        // Create card element with accessibility attributes
+        var card = document.createElement('article');
         card.className = 'cardcrafter-card';
+        card.setAttribute('role', 'listitem');
         card.setAttribute('data-index', index);
+        card.setAttribute('tabindex', '-1'); // Make focusable for keyboard nav
+        card.setAttribute('aria-labelledby', titleId);
+        if (description) {
+            card.setAttribute('aria-describedby', descId);
+        }
 
         // Card inner wrapper (for animations)
         var cardInner = document.createElement('div');
         cardInner.className = 'cardcrafter-card-inner';
 
-        // Debug: Log display options
-        console.log('Creating card - showImage:', this.options.showImage, 'showDescription:', this.options.showDescription, 'showButtons:', this.options.showButtons);
-
         // Image section - only if showImage is not false
         if (this.options.showImage !== false && image) {
-            console.log('Adding image to card');
             var imageSection = document.createElement('div');
             imageSection.className = 'cardcrafter-card-image';
             var img = document.createElement('img');
             img.src = image || this.getPlaceholderImage(title);
-            img.alt = title;
+            // More descriptive alt text for accessibility
+            img.alt = subtitle ? title + ' - ' + subtitle : title;
             img.loading = 'lazy';
             img.onerror = function () {
                 this.src = self.getPlaceholderImage(title);
@@ -604,9 +969,10 @@
         var content = document.createElement('div');
         content.className = 'cardcrafter-card-content';
 
-        // Title
+        // Title with unique ID for ARIA
         var titleEl = document.createElement('h3');
         titleEl.className = 'cardcrafter-card-title';
+        titleEl.id = titleId;
         titleEl.textContent = title;
         content.appendChild(titleEl);
 
@@ -622,24 +988,23 @@
         if (description && this.options.showDescription !== false) {
             var descEl = document.createElement('p');
             descEl.className = 'cardcrafter-card-description';
+            descEl.id = descId;
             // Truncate if too long
             descEl.textContent = description.length > 150 ? description.substring(0, 147) + '...' : description;
             content.appendChild(descEl);
         }
 
         // Link/Button - only if showButtons is not false
-        console.log('Button check - link:', link, 'showButtons:', this.options.showButtons, 'condition result:', (link && this.options.showButtons !== false));
         if (link && this.options.showButtons !== false) {
-            console.log('Adding button to card');
             var linkEl = document.createElement('a');
             linkEl.className = 'cardcrafter-card-link';
             linkEl.href = link;
             linkEl.textContent = 'Learn More';
             linkEl.target = '_blank';
             linkEl.rel = 'noopener noreferrer';
+            // Accessible link text that includes card title
+            linkEl.setAttribute('aria-label', 'Learn more about ' + title);
             content.appendChild(linkEl);
-        } else {
-            console.log('Button NOT added - either no link or showButtons is false');
         }
 
         cardInner.appendChild(content);
@@ -655,7 +1020,10 @@
         var self = this;
         var exportData = this.prepareExportData();
         var filename = this.generateFilename(format);
-        
+
+        // Announce export starting
+        this.announce('Exporting ' + exportData.length + ' cards as ' + format.toUpperCase());
+
         try {
             switch (format) {
                 case 'csv':
@@ -670,13 +1038,14 @@
                 default:
                     throw new Error('Unsupported export format: ' + format);
             }
-            
+
             // Track export for analytics
             this.trackExport(format, exportData.length);
-            
+
         } catch (error) {
             console.error('CardCrafter Export Error:', error);
             this.showExportError(error.message);
+            this.announce('Export failed: ' + error.message);
         }
     };
 
@@ -866,17 +1235,23 @@
     };
 
     /**
-     * Show Export Success Message
+     * Show Export Success Message (accessible)
      */
     CardCrafter.prototype.showExportSuccess = function (filename, mimeType) {
+        var self = this;
         var message = document.createElement('div');
         message.className = 'cardcrafter-export-success';
+        message.setAttribute('role', 'alert');
+        message.setAttribute('aria-live', 'assertive');
         message.innerHTML = '✅ Successfully exported ' + filename;
         message.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 12px 20px; border-radius: 6px; z-index: 9999; font-weight: 500;';
-        
+
         document.body.appendChild(message);
-        
-        setTimeout(function() {
+
+        // Announce success
+        this.announce('Export complete: ' + filename);
+
+        setTimeout(function () {
             if (message.parentNode) {
                 message.parentNode.removeChild(message);
             }
@@ -884,17 +1259,19 @@
     };
 
     /**
-     * Show Export Error Message
+     * Show Export Error Message (accessible)
      */
     CardCrafter.prototype.showExportError = function (errorMsg) {
         var message = document.createElement('div');
         message.className = 'cardcrafter-export-error';
+        message.setAttribute('role', 'alert');
+        message.setAttribute('aria-live', 'assertive');
         message.innerHTML = '❌ Export failed: ' + errorMsg;
         message.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #dc2626; color: white; padding: 12px 20px; border-radius: 6px; z-index: 9999; font-weight: 500;';
-        
+
         document.body.appendChild(message);
-        
-        setTimeout(function() {
+
+        setTimeout(function () {
             if (message.parentNode) {
                 message.parentNode.removeChild(message);
             }
