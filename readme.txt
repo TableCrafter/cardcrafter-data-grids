@@ -4,7 +4,7 @@ Tags: json, cards, grid, data, layout
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.12.2
+Stable tag: 1.13.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -168,6 +168,14 @@ CardCrafter works with any publicly accessible JSON endpoint. The API must allow
 10. **Mobile Responsive Design** - Cards automatically adapt to smaller screens with optimized spacing, typography, and touch-friendly interactions.
 
 == Changelog ==
+
+= 1.13.0 =
+* CRITICAL FIX: Fixed fatal PHP error when ACF is not installed (wrapped get_fields in function_exists)
+* ACCESSIBILITY: Full WCAG 2.1 AA compliance (ARIA landmarks, roles, live regions)
+* ACCESSIBILITY: Full keyboard navigation support (Arrow keys, Tab, Home, End)
+* ACCESSIBILITY: Enhanced visible focus indicators and high contrast support
+* ACCESSIBILITY: Added skip-to-grid link and reduced motion support
+* IMPROVED: Screen reader announcements for dynamic content (search, sort, pagination)
 
 = 1.12.2 =
 * CRITICAL FIX: Frontend shortcodes now display cards instead of "Loading..." forever

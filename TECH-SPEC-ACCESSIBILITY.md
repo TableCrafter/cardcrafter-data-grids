@@ -153,12 +153,16 @@ CardCrafter.prototype.announce = function(message) {
 CardCrafter.prototype.handleKeyboard = function(e) {
     switch(e.key) {
         case 'ArrowRight':
-        case 'ArrowDown':
             this.focusNextCard();
             break;
         case 'ArrowLeft':
-        case 'ArrowUp':
             this.focusPreviousCard();
+            break;
+        case 'ArrowDown':
+            this.focusCardBelow();
+            break;
+        case 'ArrowUp':
+            this.focusCardAbove();
             break;
         case 'Home':
             this.focusFirstCard();
