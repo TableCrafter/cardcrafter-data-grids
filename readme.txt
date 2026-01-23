@@ -76,39 +76,57 @@ Don't take our word for it, try CardCrafter live. **[Full-featured demo](https:/
 
 == Usage ==
 
-**WordPress Native Data (NEW!):**
+**Display WordPress Posts**
+Display your blog posts, pages, or custom post types as beautiful cards.
+`[cardcrafter-data-grids post_type="post"]`
+
+**Show WooCommerce Products**
+Display your products in a grid layout.
 `[cardcrafter-data-grids post_type="product"]`
+
+**Team Directory (Sorted)**
+Display team members sorted alphabetically by title.
 `[cardcrafter-data-grids post_type="team" wp_query="orderby=title&order=ASC"]`
-*Display your WordPress posts, pages, or custom post types as beautiful cards*
 
-**Advanced WordPress Integration:**
+**News Category**
+Show only posts from the 'news' category.
 `[cardcrafter-data-grids post_type="post" wp_query="category_name=news&posts_per_page=6"]`
+
+**Featured Products**
+Display products that have a 'featured' meta key set to 'yes'.
 `[cardcrafter-data-grids post_type="product" wp_query="meta_key=featured&meta_value=yes"]`
+
+**Team by Author**
+Show team members created by a specific author (ID 5).
 `[cardcrafter-data-grids post_type="team" wp_query="author=5&orderby=menu_order"]`
-*Support for categories, custom fields, authors, and complex WordPress queries*
 
-**ACF (Advanced Custom Fields) Integration:**
+**Portfolio with Custom Fields (ACF)**
+Map your custom fields to card elements automatically.
 `[cardcrafter-data-grids post_type="portfolio" image_field="project_image" subtitle_field="client_name"]`
+
+**Product with Descriptions**
+Use custom fields for price and features.
 `[cardcrafter-data-grids post_type="product" subtitle_field="price" description_field="product_features"]`
-*Automatic integration with ACF fields - use any custom field as card content*
 
-**Instant Demo (No Setup Required):**
+**Instant Demo**
+Automatically loads team demo data with professional banner.
 `[cardcrafter-data-grids]`
-*Automatically loads team demo data with professional banner*
 
-**Gutenberg Block (Recommended):**
+**Gutenberg Block (Recommended)**
 1. Add the "CardCrafter" block to any post/page
 2. Configure your data source in the sidebar settings
 3. Choose layout, columns, and interactive features
 4. Preview updates live in the editor
 
-**Shortcode (Classic Editor):**
+**Load from JSON URL**
+Load data from an external JSON source.
 `[cardcrafter-data-grids source="https://example.com/team.json"]`
 
-**With Options:**
+**Masonry Layout**
+Display cards in a Pinterest-style masonry layout.
 `[cardcrafter-data-grids source="https://example.com/products.json" layout="masonry" columns="4"]`
 
-**Shortcode Attributes:**
+**Shortcode Attributes**
 *   `source` (optional) - URL of your JSON data. Omit for instant demo mode.
 *   `post_type` (NEW!) - WordPress post type to display (post, page, product, etc.)
 *   `wp_query` (NEW!) - Custom WordPress query parameters (category=news&author=5)
