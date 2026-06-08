@@ -4,7 +4,7 @@ Tags: json, cards, grid, data, layout
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.14.2
+Stable tag: 1.14.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -198,6 +198,10 @@ CardCrafter works with any publicly accessible JSON endpoint. The API must allow
 10. **Mobile Responsive Design** - Cards automatically adapt to smaller screens with optimized spacing, typography, and touch-friendly interactions.
 
 == Changelog ==
+
+= 1.14.3 =
+* COMPATIBILITY: Tested with WordPress 7.0.
+* MAINTENANCE: Bumped supported WordPress version.
 
 = 1.14.2 =
 * COMPATIBILITY: Tested with WordPress 7.0.
