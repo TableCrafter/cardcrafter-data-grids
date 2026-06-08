@@ -343,7 +343,8 @@ class CardCrafter_Elementor_Widget extends Widget_Base
             [
                 'type' => Controls_Manager::RAW_HTML,
                 'raw' => sprintf(
-                    __('%sElementor Pro Required%s This feature requires Elementor Pro to use dynamic tags and field plugins like ACF, Meta Box, Toolset, etc.', 'cardcrafter-data-grids'),
+                    /* translators: 1: opening <strong> tag, 2: closing </strong> tag followed by <br> */
+                    __('%1$sElementor Pro Required%2$s This feature requires Elementor Pro to use dynamic tags and field plugins like ACF, Meta Box, Toolset, etc.', 'cardcrafter-data-grids'),
                     '<strong>',
                     '</strong><br>'
                 ),
