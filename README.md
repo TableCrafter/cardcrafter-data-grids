@@ -255,6 +255,6 @@ This project is licensed under the GPL v2 or later - see the [LICENSE](LICENSE) 
 
 **[Download from WordPress.org](https://wordpress.org/plugins/cardcrafter-data-grids/) • [View Live Demo](https://cardcrafter.tablecrafter.com) • [GitHub](https://github.com/TableCrafter/cardcrafter-data-grids)**
 
-*Made with ❤️ by the TableCrafter team*
+Part of the Crafter plugin family by [TableCrafter](https://github.com/TableCrafter).
 
 </div>
